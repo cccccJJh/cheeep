@@ -12,10 +12,13 @@ export default defineConfig(({ command }) => ({
       registerType: 'autoUpdate',
       includeAssets: [
         'favicon.svg',
+        'favicon-32.png',
         'icon.svg',
         'apple-touch-icon.png',
         'pwa-192.png',
         'pwa-512.png',
+        'pwa-maskable-192.png',
+        'pwa-maskable-512.png',
       ],
       manifest: {
         name: 'Cheeep',
@@ -41,7 +44,13 @@ export default defineConfig(({ command }) => ({
             purpose: 'any',
           },
           {
-            src: 'pwa-512.png',
+            src: 'pwa-maskable-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+            purpose: 'maskable',
+          },
+          {
+            src: 'pwa-maskable-512.png',
             sizes: '512x512',
             type: 'image/png',
             purpose: 'maskable',

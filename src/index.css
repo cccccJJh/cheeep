@@ -716,7 +716,11 @@ a {
 }
 
 .nav a.active {
-  color: var(--teal);
+  color: #d94f3d;
+}
+
+.nav .nav-wish {
+  color: #d94f3d;
 }
 
 .nav-action {
@@ -725,16 +729,16 @@ a {
   padding: 0 8px;
 }
 
-.nav-add {
-  color: var(--teal);
+.nav .nav-add {
+  color: #f3a6a0;
 }
 
-.nav-record {
-  color: #3b6f8a;
+.nav .nav-record {
+  color: #5a9b45;
 }
 
-.nav-undo {
-  color: #a56b3c;
+.nav .nav-undo {
+  color: #c45c3e;
 }
 
 .form {
@@ -851,4 +855,48 @@ label {
   background: #ece4d4;
   color: var(--muted);
   font-size: 12px;
+}
+
+.swatch-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.swatch-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px 14px 10px;
+}
+
+.swatch-name {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.swatch-hex {
+  margin: 4px 0 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.swatch-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.swatch-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  font-size: 12px;
+  font-weight: 800;
 }

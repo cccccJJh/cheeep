@@ -46,7 +46,7 @@ type Props = {
 export function BottomNav({ right }: Props) {
   return (
     <nav className="nav">
-      <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
+      <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-wish active' : 'nav-wish')}>
         <IconHeart />
         위시
       </NavLink>
