@@ -15,6 +15,7 @@ import {
   formatWon,
   vsTarget,
 } from './lib'
+import { applyTheme, readTheme, type ThemeName } from './theme'
 
 const MAX_MIN_STORES = 3
 
@@ -76,6 +77,7 @@ export function Home() {
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'open' | 'done'>('open')
+  const [theme, setTheme] = useState<ThemeName>(() => readTheme())
   const [items, setItems] = useState<Item[]>([])
   const [sightings, setSightings] = useState<Sighting[]>([])
 
@@ -131,7 +133,17 @@ export function Home() {
     <>
     <div className="page has-nav">
       <header className="home-hero">
-        <h1>Cheeep</h1>
+        <div className="home-hero-top">
+          <h1>Cheeep</h1>
+          <ThemeToggle
+            theme={theme}
+            onToggle={() => {
+              const next = theme === 'pika' ? 'mint' : 'pika'
+              applyTheme(next)
+              setTheme(next)
+            }}
+          />
+        </div>
         <p>사고 싶은 건, 쌀 때 사자.</p>
       </header>
 
@@ -281,5 +293,34 @@ export function Home() {
       right={{ kind: 'link', to: '/new', label: '위시 추가', icon: 'plus', tone: 'add' }}
     />
     </>
+  )
+}
+
+function ThemeToggle({
+  theme,
+  onToggle,
+}: {
+  theme: ThemeName
+  onToggle: () => void
+}) {
+  return (
+    <div className="theme-toggle">
+      <span className={theme === 'mint' ? 'theme-name on' : 'theme-name'}>
+        초록
+      </span>
+      <button
+        type="button"
+        className="theme-switch"
+        role="switch"
+        aria-checked={theme === 'pika'}
+        aria-label="초록 테마와 피카츄 테마 전환"
+        onClick={onToggle}
+      >
+        <span className="theme-knob" />
+      </button>
+      <span className={theme === 'pika' ? 'theme-name on' : 'theme-name'}>
+        피카
+      </span>
+    </div>
   )
 }
