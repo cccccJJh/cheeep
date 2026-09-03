@@ -1,4 +1,5 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
+import { BestColorTest } from './BestColorTest'
 import { BuyForm } from './BuyForm'
 import { Home } from './Home'
 import { ItemDetail } from './ItemDetail'
@@ -19,6 +20,7 @@ export default function App() {
         <Route path="/items/:id/record" element={<SightingForm />} />
         <Route path="/items/:id/record/:sid" element={<SightingForm />} />
         <Route path="/nav-colors" element={<NavColorTest />} />
+        <Route path="/best-colors" element={<BestColorTest />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

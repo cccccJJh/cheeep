@@ -81,7 +81,7 @@ export function Home() {
 
   useEffect(() => {
     void Promise.all([
-      db.items.orderBy('updatedAt').reverse().toArray(),
+      db.items.orderBy('id').reverse().toArray(),
       db.sightings.toArray(),
     ]).then(([nextItems, nextSightings]) => {
       setItems(nextItems)

@@ -98,10 +98,25 @@ export function cheapestForItem(
   list: Sighting[],
   item: Item,
 ): Sighting | undefined {
-  if (!isStingy(item) || !item.comparisonUnit) return cheapestOf(list)
-  return sortSightingsForItem(list, item).find(
-    (s) => unitPriceOf(s, item.comparisonUnit!) != null,
-  )
+  return bestSightingsForItem(list, item)[0]
+}
+
+export function bestSightingsForItem(list: Sighting[], item: Item): Sighting[] {
+  if (list.length === 0) return []
+  const unit = item.comparisonUnit
+  if (isStingy(item) && unit) {
+    const withUnit = list.filter((s) => unitPriceOf(s, unit) != null)
+    if (withUnit.length > 0) {
+      let min = Infinity
+      for (const s of withUnit) {
+        const won = unitPriceOf(s, unit)
+        if (won != null && won < min) min = won
+      }
+      return withUnit.filter((s) => unitPriceOf(s, unit) === min)
+    }
+  }
+  const minPrice = Math.min(...list.map((s) => s.price))
+  return list.filter((s) => s.price === minPrice)
 }
 
 export async function setStingyMode(

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
 import {
-  cheapestForItem,
+  bestSightingsForItem,
   type ComparisonUnit,
   clearPurchase,
   db,
@@ -123,7 +123,15 @@ export function ItemDetail() {
   const itemName = item.name
   const stingy = isStingy(item)
   const unit = item.comparisonUnit
-  const best = cheapestForItem(sightings, item)
+  const bestIds = new Set(
+    bestSightingsForItem(sightings, item)
+      .map((s) => s.id)
+      .filter((id): id is number => id != null),
+  )
+  const anyUnitPrice =
+    stingy && unit
+      ? sightings.some((s) => unitPriceOf(s, unit) != null)
+      : false
   const bought = isPurchased(item)
   const boughtLines = bought ? purchaseLines(item) : []
 
@@ -327,7 +335,7 @@ export function ItemDetail() {
         <ol className="record-list">
           {sightings.map((s, i) => {
             const unitWon = stingy && unit ? unitPriceOf(s, unit) : undefined
-            const isBest = s.id === best?.id
+            const isBest = s.id != null && bestIds.has(s.id)
             return (
               <li className={isBest ? 'record-row best-row' : 'record-row'} key={s.id}>
                 <span className="num">{i + 1}</span>
@@ -340,8 +348,8 @@ export function ItemDetail() {
                     <p className="record-unit">
                       {unitHeadline(unit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
                     </p>
-                  ) : stingy ? (
-                    <p className="record-unit">용량 없음 · 판매가만 있음</p>
+                  ) : stingy && anyUnitPrice ? (
+                    <p className="record-unit">용량 없음 · 판매가로 비교</p>
                   ) : null}
                   <p className="record-line">
                     {formatWon(s.price)}
