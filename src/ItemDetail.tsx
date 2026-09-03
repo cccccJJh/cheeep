@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
+import { BottomNav } from './BottomNav'
 import {
   cheapestForItem,
   type ComparisonUnit,
@@ -10,18 +11,55 @@ import {
   isPurchased,
   isStingy,
   setStingyMode,
+  setTargetPrice,
   sortSightingsForItem,
   type Item,
   type Sighting,
+  unitPriceFrom,
   unitPriceOf,
 } from './db'
 import {
   formatPackageSize,
+  formatPurchaseDate,
   formatWon,
-  unitBasis,
+  parseOptionalPrice,
   unitHeadline,
-  vsTarget,
 } from './lib'
+
+function compareLabel(item: Item): string {
+  if (isStingy(item) && item.comparisonUnit) {
+    if (item.comparisonUnit === 'each') return '개당'
+    return unitHeadline(item.comparisonUnit)
+  }
+  return '총 가격'
+}
+
+function purchaseLines(item: Item): string[] {
+  const lines: string[] = []
+  const head: string[] = []
+  const store = item.purchasedStore?.trim()
+  if (store) head.push(store)
+  if (item.paidPrice != null) head.push(formatWon(item.paidPrice))
+  if (head.length) lines.push(head.join(' · '))
+
+  const extra: string[] = []
+  const qty = item.purchasedQuantity
+  const unit = item.comparisonUnit
+  if (qty != null && qty > 0) {
+    extra.push(unit ? formatPackageSize(qty, unit) : qty.toLocaleString('ko-KR'))
+  }
+  if (isStingy(item) && unit && item.paidPrice != null && qty != null) {
+    const unitWon = unitPriceFrom(item.paidPrice, qty, unit)
+    if (unitWon != null) {
+      extra.push(`${unitHeadline(unit)} ${Math.round(unitWon).toLocaleString('ko-KR')}원`)
+    }
+  }
+  if (extra.length) lines.push(extra.join(' · '))
+  if (item.purchasedAt != null) {
+    lines.push(`${formatPurchaseDate(item.purchasedAt)} 구매`)
+  }
+  return lines
+}
 
 export function ItemDetail() {
   const { id } = useParams()
@@ -30,6 +68,11 @@ export function ItemDetail() {
   const [item, setItem] = useState<Item>()
   const [sightings, setSightings] = useState<Sighting[]>([])
   const [ready, setReady] = useState(false)
+  const [openMenu, setOpenMenu] = useState<number>()
+  const [compareOpen, setCompareOpen] = useState(false)
+  const [targetOpen, setTargetOpen] = useState(false)
+  const [targetDraft, setTargetDraft] = useState('')
+  const [targetError, setTargetError] = useState('')
 
   async function reload() {
     const nextItem = await db.items.get(itemId)
@@ -50,6 +93,20 @@ export function ItemDetail() {
     void reload()
   }, [itemId])
 
+  useEffect(() => {
+    if (openMenu == null) return
+    function close() {
+      setOpenMenu(undefined)
+    }
+    const timer = window.setTimeout(() => {
+      document.addEventListener('click', close)
+    }, 0)
+    return () => {
+      window.clearTimeout(timer)
+      document.removeEventListener('click', close)
+    }
+  }, [openMenu])
+
   if (!ready) {
     return <div className="page">불러오는 중…</div>
   }
@@ -68,8 +125,7 @@ export function ItemDetail() {
   const unit = item.comparisonUnit
   const best = cheapestForItem(sightings, item)
   const bought = isPurchased(item)
-  const bestUnit =
-    stingy && unit && best ? unitPriceOf(best, unit) : undefined
+  const boughtLines = bought ? purchaseLines(item) : []
 
   async function onPlainMode() {
     await setStingyMode(itemId, false)
@@ -78,6 +134,18 @@ export function ItemDetail() {
 
   async function onStingyMode(next?: ComparisonUnit) {
     await setStingyMode(itemId, true, next ?? unit ?? '100g')
+    await reload()
+  }
+
+  async function onSaveTarget() {
+    const parsed = parseOptionalPrice(targetDraft)
+    if (parsed === null) {
+      setTargetError('기준가는 숫자로 적어 주세요. 비워 두면 지워집니다.')
+      return
+    }
+    await setTargetPrice(itemId, parsed)
+    setTargetError('')
+    setTargetOpen(false)
     await reload()
   }
 
@@ -97,11 +165,13 @@ export function ItemDetail() {
     if (!sighting.id) return
     if (!confirm('이 가격 기록을 지울까요?')) return
     await deleteSighting(sighting.id, itemId)
+    setOpenMenu(undefined)
     await reload()
   }
 
   return (
-    <div className="page detail-page">
+    <>
+    <div className="page detail-page has-nav">
       <header className="topbar">
         <Link className="back" to="/">
           ‹ 위시
@@ -113,111 +183,142 @@ export function ItemDetail() {
 
       <div className="detail-head">
         <h1>{item.name}</h1>
-        <p className="mode-line">
-          {stingy && unit ? `단위비교 · ${unitBasis(unit)}` : '판매가 최저가'}
-        </p>
       </div>
 
-      {bought && item.paidPrice != null ? (
-        <section className="receipt">
-          <p className="receipt-kicker">구매완료</p>
-          <p className="kpi-label">구매가</p>
-          <p className="kpi">
-            {item.paidPrice.toLocaleString('ko-KR')}
-            <span>원</span>
-          </p>
-          {best ? (
-            <p className="price-sub">
-              기록 최저 {formatWon(best.price)}
-              {item.paidPrice === best.price ? ' · 최저가로 삼' : ''}
-            </p>
-          ) : null}
-        </section>
-      ) : best ? (
-        <section className="receipt">
-          <p className="receipt-kicker">BEST</p>
-          <p className="kpi-label">
-            {stingy && unit ? unitHeadline(unit) : '최저가'}
-          </p>
-          <p className="kpi">
-            {stingy && unit && bestUnit != null
-              ? Math.round(bestUnit).toLocaleString('ko-KR')
-              : best.price.toLocaleString('ko-KR')}
-            <span>원</span>
-          </p>
-          <p className="receipt-store">{best.store}</p>
-          <p className="price-sub">
-            {stingy && unit && best.packageSize != null
-              ? `${formatPackageSize(best.packageSize, unit)}  ·  ${formatWon(best.price)}`
-              : formatWon(best.price)}
-          </p>
-        </section>
-      ) : (
-        <section className="receipt empty-receipt">
-          <p className="kpi-label">최저가</p>
-          <p className="kpi muted-kpi">아직 없음</p>
-          <p className="price-sub">매장 가격을 남기면 BEST가 생깁니다.</p>
-        </section>
-      )}
-
-      <Link className="setting-row" to={`/items/${itemId}/target`}>
-        <div>
-          <p className="kpi-label">기준가</p>
-          <p className="setting-value">
-            {item.targetPrice != null ? formatWon(item.targetPrice) : '아직 없음'}
-          </p>
-          {best && item.targetPrice != null && !stingy ? (
-            <p className="price-foot">{vsTarget(best.price, item.targetPrice)}</p>
-          ) : null}
-        </div>
-        <span>수정 ›</span>
-      </Link>
-
-      <section className="compare-box">
-        <p className="section-label">가격 비교 방식</p>
+      <div className="fact-list">
         <button
-          className={item.unitPriceEnabled ? 'method' : 'method on'}
+          className="fact-row"
           type="button"
-          onClick={() => void onPlainMode()}
+          onClick={() => {
+            setCompareOpen(false)
+            setTargetOpen((open) => {
+              const next = !open
+              if (next) {
+                setTargetDraft(item.targetPrice != null ? String(item.targetPrice) : '')
+                setTargetError('')
+              }
+              return next
+            })
+          }}
         >
-          <strong>그냥 최저가</strong>
-          <span>판매가격이 가장 싼 곳을 찾아요</span>
+          <span className="fact-key">기준가</span>
+          <span className="fact-right">
+            <span className="fact-val">
+              {item.targetPrice != null ? formatWon(item.targetPrice) : '없음'}
+            </span>
+            <span className="fact-go" aria-hidden>
+              ›
+            </span>
+          </span>
         </button>
-        <button
-          className={item.unitPriceEnabled ? 'method on' : 'method'}
-          type="button"
-          onClick={() => void onStingyMode()}
-        >
-          <strong>짠돌이 모드</strong>
-          <span>용량까지 따져서 진짜 싼 곳을 찾아요</span>
-        </button>
-        {item.unitPriceEnabled ? (
-          <div className="unit-picks">
-            {(
-              [
-                ['100g', '100g'],
-                ['100ml', '100ml'],
-                ['each', '1개'],
-              ] as const
-            ).map(([value, label]) => (
-              <button
-                key={value}
-                className={unit === value ? 'chip active' : 'chip'}
-                type="button"
-                onClick={() => void onStingyMode(value)}
-              >
-                {label}
-              </button>
-            ))}
+        {targetOpen ? (
+          <div className="fact-extra">
+            <div className="money-field">
+              <input
+                inputMode="numeric"
+                value={targetDraft}
+                onChange={(e) => setTargetDraft(e.target.value)}
+                placeholder="비워 두면 없음"
+                autoFocus
+              />
+              <span>원</span>
+            </div>
+            {targetError ? <p className="error">{targetError}</p> : null}
+            <button className="btn fact-save" type="button" onClick={() => void onSaveTarget()}>
+              저장
+            </button>
           </div>
         ) : null}
-      </section>
+
+        <button
+          className="fact-row"
+          type="button"
+          onClick={() => {
+            setTargetOpen(false)
+            setCompareOpen((open) => !open)
+          }}
+        >
+          <span className="fact-key">가격 비교</span>
+          <span className="fact-right">
+            <span className="fact-val">{compareLabel(item)}</span>
+            <span className="fact-go" aria-hidden>
+              ›
+            </span>
+          </span>
+        </button>
+        {compareOpen ? (
+          <div className="fact-extra">
+            <button
+              className={item.unitPriceEnabled ? 'method' : 'method on'}
+              type="button"
+              onClick={() => void onPlainMode()}
+            >
+              <strong>그냥 최저가</strong>
+            </button>
+            <button
+              className={item.unitPriceEnabled ? 'method on' : 'method'}
+              type="button"
+              onClick={() => void onStingyMode()}
+            >
+              <strong>짠돌이 모드</strong>
+            </button>
+            {item.unitPriceEnabled ? (
+              <div className="unit-picks">
+                {(
+                  [
+                    ['100g', '100g'],
+                    ['100ml', '100ml'],
+                    ['each', '1개'],
+                  ] as const
+                ).map(([value, label]) => (
+                  <button
+                    key={value}
+                    className={unit === value ? 'chip active' : 'chip'}
+                    type="button"
+                    onClick={() => void onStingyMode(value)}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {bought ? (
+          <>
+            <Link className="fact-row" to={`/items/${itemId}/buy`}>
+              <span className="fact-key">구매 상태</span>
+              <span className="fact-right">
+                <span className="fact-val">구매완료</span>
+                <span className="fact-go" aria-hidden>
+                  ›
+                </span>
+              </span>
+            </Link>
+            {boughtLines.length ? (
+              <div className="purchase-note">
+                {boughtLines.map((line) => (
+                  <p key={line}>{line}</p>
+                ))}
+              </div>
+            ) : null}
+          </>
+        ) : (
+          <Link className="fact-row" to={`/items/${itemId}/buy`}>
+            <span className="fact-key">구매 상태</span>
+            <span className="fact-right">
+              <span className="fact-val">미구매</span>
+              <span className="fact-go" aria-hidden>
+                ›
+              </span>
+            </span>
+          </Link>
+        )}
+      </div>
 
       <div className="section-row">
-        <h2>가격 기록</h2>
-        <Link className="text-add" to={`/items/${itemId}/record`}>
-          + 기록
-        </Link>
+        <h2>가격 기록{sightings.length ? ` ${sightings.length}` : ''}</h2>
       </div>
 
       {sightings.length === 0 ? (
@@ -231,12 +332,9 @@ export function ItemDetail() {
               <li className={isBest ? 'record-row best-row' : 'record-row'} key={s.id}>
                 <span className="num">{i + 1}</span>
                 <div className="record-body">
-                  <p className="record-store">{s.store}</p>
-                  <p className="record-line">
-                    {formatWon(s.price)}
-                    {stingy && unit && s.packageSize != null
-                      ? ` · ${formatPackageSize(s.packageSize, unit)}`
-                      : ''}
+                  <p className="record-store">
+                    {s.store}
+                    {isBest ? <span className="best">BEST</span> : null}
                   </p>
                   {stingy && unit && unitWon != null ? (
                     <p className="record-unit">
@@ -245,37 +343,64 @@ export function ItemDetail() {
                   ) : stingy ? (
                     <p className="record-unit">용량 없음 · 판매가만 있음</p>
                   ) : null}
+                  <p className="record-line">
+                    {formatWon(s.price)}
+                    {s.packageSize != null && unit
+                      ? ` · ${formatPackageSize(s.packageSize, unit)}`
+                      : s.packageSize != null
+                        ? ` · ${s.packageSize.toLocaleString('ko-KR')}`
+                        : ''}
+                  </p>
                 </div>
-                {isBest ? <span className="best">BEST</span> : null}
-                <div className="row-actions">
-                  <Link className="btn-ghost" to={`/items/${itemId}/record/${s.id}`}>
-                    수정
-                  </Link>
+                <div className="more-wrap">
                   <button
-                    className="btn-danger"
+                    className="more-btn"
                     type="button"
-                    onClick={() => void onDeleteSighting(s)}
+                    aria-label="기록 메뉴"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOpenMenu(openMenu === s.id ? undefined : s.id)
+                    }}
                   >
-                    삭제
+                    ⋯
                   </button>
+                  {openMenu === s.id ? (
+                    <div className="more-menu">
+                      <Link to={`/items/${itemId}/record/${s.id}`}>수정</Link>
+                      <button
+                        type="button"
+                        onClick={() => void onDeleteSighting(s)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ) : null}
                 </div>
               </li>
             )
           })}
         </ol>
       )}
-
-      <div className="buy-bar">
-        {bought ? (
-          <button className="btn-secondary" type="button" onClick={() => void onClearPurchase()}>
-            위시로 되돌리기
-          </button>
-        ) : (
-          <Link className="btn" to={`/items/${itemId}/buy`}>
-            이 가격으로 구매
-          </Link>
-        )}
-      </div>
     </div>
+    {bought ? (
+      <BottomNav
+        right={{
+          kind: 'action',
+          label: '위시로 되돌리기',
+          icon: 'undo',
+          onClick: () => void onClearPurchase(),
+        }}
+      />
+    ) : (
+      <BottomNav
+        right={{
+          kind: 'link',
+          to: `/items/${itemId}/record`,
+          label: '가격 기록',
+          icon: 'plus',
+        }}
+      />
+    )}
+    </>
   )
 }

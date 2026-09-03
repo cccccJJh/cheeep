@@ -12,6 +12,12 @@ export function formatDate(ts: number): string {
   })
 }
 
+export function formatPurchaseDate(ts: number): string {
+  const d = new Date(ts)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}. ${pad(d.getMonth() + 1)}. ${pad(d.getDate())}`
+}
+
 export function toDateInput(ts: number): string {
   const d = new Date(ts)
   const pad = (n: number) => String(n).padStart(2, '0')

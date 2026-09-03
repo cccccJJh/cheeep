@@ -9,6 +9,8 @@ export type Item = {
   updatedAt: number
   purchasedAt?: number
   paidPrice?: number
+  purchasedStore?: string
+  purchasedQuantity?: number
   targetPrice?: number
   unitPriceEnabled?: boolean
   comparisonUnit?: ComparisonUnit
@@ -43,6 +45,11 @@ db.version(2).stores({
   sightings: '++id, itemId, price, seenAt, store',
 })
 
+db.version(3).stores({
+  items: '++id, name, updatedAt, purchasedAt',
+  sightings: '++id, itemId, price, seenAt, store',
+})
+
 export { db }
 
 export function sortSightings(list: Sighting[]): Sighting[] {
@@ -57,14 +64,21 @@ export function isStingy(item: Item): boolean {
   return item.unitPriceEnabled === true && item.comparisonUnit != null
 }
 
+export function unitPriceFrom(
+  price: number,
+  size: number | undefined,
+  unit: ComparisonUnit,
+): number | undefined {
+  if (size == null || size <= 0) return undefined
+  if (unit === 'each') return price / size
+  return (price * 100) / size
+}
+
 export function unitPriceOf(
   sighting: Sighting,
   unit: ComparisonUnit,
 ): number | undefined {
-  const size = sighting.packageSize
-  if (size == null || size <= 0) return undefined
-  if (unit === 'each') return sighting.price / size
-  return (sighting.price * 100) / size
+  return unitPriceFrom(sighting.price, sighting.packageSize, unit)
 }
 
 export function sortSightingsForItem(list: Sighting[], item: Item): Sighting[] {
@@ -153,12 +167,21 @@ export async function saveSighting(
 export async function markPurchased(
   itemId: number,
   paidPrice: number,
+  purchasedStore: string,
+  purchasedQuantity?: number,
 ): Promise<void> {
-  await db.items.update(itemId, {
-    paidPrice,
-    purchasedAt: Date.now(),
-    updatedAt: Date.now(),
-  })
+  const store = purchasedStore.trim()
+  await db.items
+    .where('id')
+    .equals(itemId)
+    .modify((item) => {
+      item.paidPrice = paidPrice
+      item.purchasedStore = store
+      item.purchasedAt = Date.now()
+      if (purchasedQuantity != null) item.purchasedQuantity = purchasedQuantity
+      else delete item.purchasedQuantity
+      item.updatedAt = Date.now()
+    })
 }
 
 export async function clearPurchase(itemId: number): Promise<void> {
@@ -168,6 +191,8 @@ export async function clearPurchase(itemId: number): Promise<void> {
     .modify((item) => {
       delete item.paidPrice
       delete item.purchasedAt
+      delete item.purchasedStore
+      delete item.purchasedQuantity
       item.updatedAt = Date.now()
     })
 }

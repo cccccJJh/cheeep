@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, Link } from 'react-router-dom'
 
 function IconHeart() {
   return (
@@ -21,17 +21,44 @@ function IconPlus() {
   )
 }
 
-export function BottomNav() {
+function IconUndo() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
+      <path
+        d="M9 10H4V5M4.6 14A8 8 0 1 0 6 8.2"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  )
+}
+
+type Props = {
+  right:
+    | { kind: 'link'; to: string; label: string; icon: 'plus' | 'undo' }
+    | { kind: 'action'; label: string; icon: 'undo'; onClick: () => void }
+}
+
+export function BottomNav({ right }: Props) {
   return (
     <nav className="nav">
       <NavLink to="/" end className={({ isActive }) => (isActive ? 'active' : '')}>
         <IconHeart />
         위시
       </NavLink>
-      <NavLink to="/new" className={({ isActive }) => (isActive ? 'active' : '')}>
-        <IconPlus />
-        추가
-      </NavLink>
+      {right.kind === 'link' ? (
+        <Link to={right.to} className="nav-action">
+          {right.icon === 'undo' ? <IconUndo /> : <IconPlus />}
+          {right.label}
+        </Link>
+      ) : (
+        <button className="nav-action" type="button" onClick={right.onClick}>
+          <IconUndo />
+          {right.label}
+        </button>
+      )}
     </nav>
   )
 }

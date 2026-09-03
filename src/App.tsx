@@ -1,5 +1,4 @@
 import { Navigate, Route, Routes } from 'react-router-dom'
-import { BottomNav } from './BottomNav'
 import { BuyForm } from './BuyForm'
 import { Home } from './Home'
 import { ItemDetail } from './ItemDetail'
@@ -20,7 +19,6 @@ export default function App() {
         <Route path="/items/:id/record/:sid" element={<SightingForm />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
-      <BottomNav />
     </div>
   )
 }

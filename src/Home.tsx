@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+import { BottomNav } from './BottomNav'
 import {
-  cheapestForItem,
   db,
   isPurchased,
   isStingy,
@@ -11,15 +11,65 @@ import {
 } from './db'
 import {
   formatPackageSize,
+  formatUnitPrice,
   formatWon,
-  unitHeadline,
   vsTarget,
 } from './lib'
 
+const MAX_MIN_STORES = 3
+
 type Card = {
   item: Item
-  cheapest?: Sighting
   count: number
+  minPrice?: number
+  minSightings: Sighting[]
+}
+
+function lowestTotalPrice(list: Sighting[]): number | undefined {
+  if (list.length === 0) return undefined
+  return Math.min(...list.map((s) => s.price))
+}
+
+function tiesForMinPrice(list: Sighting[], minPrice: number): Sighting[] {
+  return list
+    .filter((s) => s.price === minPrice)
+    .sort((a, b) => a.store.localeCompare(b.store, 'ko') || b.seenAt - a.seenAt)
+}
+
+function storeNamesLine(list: Sighting[]): string {
+  const names: string[] = []
+  for (const s of list) {
+    const name = s.store.trim()
+    if (name && !names.includes(name)) names.push(name)
+  }
+  return names.join(' · ')
+}
+
+function homeStoreLine(sighting: Sighting, item: Item): string {
+  const parts: string[] = []
+  const store = sighting.store.trim()
+  if (store) parts.push(store)
+
+  const unit = item.comparisonUnit
+  if (sighting.packageSize != null && sighting.packageSize > 0 && unit) {
+    parts.push(formatPackageSize(sighting.packageSize, unit))
+  }
+
+  if (isStingy(item) && unit) {
+    const won = unitPriceOf(sighting, unit)
+    if (won != null && Number.isFinite(won)) {
+      parts.push(`(${formatUnitPrice(won, unit)})`)
+    }
+  }
+
+  return parts.join(' · ')
+}
+
+function minPriceSubline(item: Item, ties: Sighting[], shown: Sighting[]): string {
+  if (ties.length >= 2 || !isStingy(item)) {
+    return storeNamesLine(shown)
+  }
+  return homeStoreLine(ties[0], item)
 }
 
 export function Home() {
@@ -53,7 +103,13 @@ export function Home() {
     return items
       .map((item) => {
         const list = item.id ? (byItem.get(item.id) ?? []) : []
-        return { item, cheapest: cheapestForItem(list, item), count: list.length }
+        const minPrice = lowestTotalPrice(list)
+        return {
+          item,
+          count: list.length,
+          minPrice,
+          minSightings: minPrice == null ? [] : tiesForMinPrice(list, minPrice),
+        }
       })
       .filter((card) => {
         const bought = isPurchased(card.item)
@@ -72,7 +128,8 @@ export function Home() {
   const trimmed = query.trim()
 
   return (
-    <div className="page">
+    <>
+    <div className="page has-nav">
       <header className="home-hero">
         <h1>Cheeep</h1>
         <p>사고 싶은 건, 쌀 때 사자.</p>
@@ -148,11 +205,12 @@ export function Home() {
             const id = card.item.id
             if (!id) return null
             const stingy = isStingy(card.item)
-            const unit = card.item.comparisonUnit
-            const unitWon =
-              stingy && unit && card.cheapest
-                ? unitPriceOf(card.cheapest, unit)
-                : undefined
+            const shown = card.minSightings.slice(0, MAX_MIN_STORES)
+            const extraTies = card.minSightings.length - shown.length
+            const minLine =
+              card.minPrice != null
+                ? minPriceSubline(card.item, card.minSightings, shown)
+                : ''
             return (
               <Link
                 className={isPurchased(card.item) ? 'price-card bought' : 'price-card'}
@@ -161,10 +219,15 @@ export function Home() {
               >
                 <div className="price-card-top">
                   <h2>{card.item.name}</h2>
-                  {stingy ? <span className="mode-tag">단위비교</span> : null}
-                  {isPurchased(card.item) ? (
-                    <span className="bought-badge">구매완료</span>
-                  ) : null}
+                  <div className="card-tags">
+                    {stingy ? <span className="mode-tag">단위비교</span> : null}
+                    {isPurchased(card.item) ? (
+                      <span className="bought-badge">구매완료</span>
+                    ) : null}
+                    {card.count > 0 ? (
+                      <span className="count-tag">{card.count}</span>
+                    ) : null}
+                  </div>
                 </div>
 
                 {isPurchased(card.item) && card.item.paidPrice != null ? (
@@ -175,40 +238,27 @@ export function Home() {
                       <span>원</span>
                     </p>
                     <p className="price-sub">
-                      {card.item.targetPrice != null
-                        ? vsTarget(card.item.paidPrice, card.item.targetPrice)
-                        : '실제로 산 금액'}
+                      {[
+                        card.item.purchasedStore?.trim(),
+                        card.item.targetPrice != null
+                          ? vsTarget(card.item.paidPrice, card.item.targetPrice)
+                          : null,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ') || '실제로 산 금액'}
                     </p>
                   </>
-                ) : card.cheapest && stingy && unit && unitWon != null ? (
-                  <>
-                    <p className="kpi-label">{unitHeadline(unit)}</p>
-                    <p className="kpi">
-                      {Math.round(unitWon).toLocaleString('ko-KR')}
-                      <span>원</span>
-                    </p>
-                    <p className="price-sub">
-                      {card.cheapest.store}
-                      {card.cheapest.packageSize != null
-                        ? ` · ${formatPackageSize(card.cheapest.packageSize, unit)}`
-                        : ''}
-                      {` · ${formatWon(card.cheapest.price)}`}
-                    </p>
-                    <p className="price-foot">{card.count}곳에서 가격 확인</p>
-                  </>
-                ) : card.cheapest ? (
+                ) : card.minPrice != null ? (
                   <>
                     <p className="kpi-label">최저가</p>
                     <p className="kpi">
-                      {card.cheapest.price.toLocaleString('ko-KR')}
+                      {card.minPrice.toLocaleString('ko-KR')}
                       <span>원</span>
                     </p>
-                    <p className="price-sub">{card.cheapest.store}</p>
-                    <p className="price-foot">
-                      {card.item.targetPrice != null
-                        ? vsTarget(card.cheapest.price, card.item.targetPrice)
-                        : `${card.count}곳에서 가격 확인`}
-                    </p>
+                    {minLine ? <p className="price-sub">{minLine}</p> : null}
+                    {extraTies > 0 ? (
+                      <p className="price-more">외 {extraTies}곳 동일 최저가</p>
+                    ) : null}
                   </>
                 ) : (
                   <>
@@ -232,5 +282,9 @@ export function Home() {
         </div>
       )}
     </div>
+    <BottomNav
+      right={{ kind: 'link', to: '/new', label: '위시 추가', icon: 'plus' }}
+    />
+    </>
   )
 }
