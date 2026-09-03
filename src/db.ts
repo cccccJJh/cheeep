@@ -1,5 +1,7 @@
 import Dexie, { type EntityTable } from 'dexie'
 
+export type ComparisonUnit = '100g' | '100ml' | 'each'
+
 export type Item = {
   id?: number
   name: string
@@ -8,6 +10,8 @@ export type Item = {
   purchasedAt?: number
   paidPrice?: number
   targetPrice?: number
+  unitPriceEnabled?: boolean
+  comparisonUnit?: ComparisonUnit
 }
 
 export type Sighting = {
@@ -18,6 +22,7 @@ export type Sighting = {
   photoBlob?: Blob
   memo?: string
   seenAt: number
+  packageSize?: number
 }
 
 export type NewItem = Omit<Item, 'id'>
@@ -46,6 +51,62 @@ export function sortSightings(list: Sighting[]): Sighting[] {
 
 export function cheapestOf(list: Sighting[]): Sighting | undefined {
   return sortSightings(list)[0]
+}
+
+export function isStingy(item: Item): boolean {
+  return item.unitPriceEnabled === true && item.comparisonUnit != null
+}
+
+export function unitPriceOf(
+  sighting: Sighting,
+  unit: ComparisonUnit,
+): number | undefined {
+  const size = sighting.packageSize
+  if (size == null || size <= 0) return undefined
+  if (unit === 'each') return sighting.price / size
+  return (sighting.price * 100) / size
+}
+
+export function sortSightingsForItem(list: Sighting[], item: Item): Sighting[] {
+  if (!isStingy(item) || !item.comparisonUnit) return sortSightings(list)
+  const unit = item.comparisonUnit
+  return [...list].sort((a, b) => {
+    const ua = unitPriceOf(a, unit)
+    const ub = unitPriceOf(b, unit)
+    if (ua == null && ub == null) return a.price - b.price || b.seenAt - a.seenAt
+    if (ua == null) return 1
+    if (ub == null) return -1
+    return ua - ub || a.price - b.price || b.seenAt - a.seenAt
+  })
+}
+
+export function cheapestForItem(
+  list: Sighting[],
+  item: Item,
+): Sighting | undefined {
+  if (!isStingy(item) || !item.comparisonUnit) return cheapestOf(list)
+  return sortSightingsForItem(list, item).find(
+    (s) => unitPriceOf(s, item.comparisonUnit!) != null,
+  )
+}
+
+export async function setStingyMode(
+  itemId: number,
+  enabled: boolean,
+  comparisonUnit?: ComparisonUnit,
+): Promise<void> {
+  await db.items
+    .where('id')
+    .equals(itemId)
+    .modify((item) => {
+      if (!enabled) {
+        item.unitPriceEnabled = false
+      } else {
+        item.unitPriceEnabled = true
+        if (comparisonUnit) item.comparisonUnit = comparisonUnit
+      }
+      item.updatedAt = Date.now()
+    })
 }
 
 export async function createItem(

@@ -1,8 +1,20 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { cheapestOf, db, isPurchased, type Item, type Sighting } from './db'
-import { formatDate, formatWon, vsTarget } from './lib'
-import { Thumb } from './Thumb'
+import {
+  cheapestForItem,
+  db,
+  isPurchased,
+  isStingy,
+  type Item,
+  type Sighting,
+  unitPriceOf,
+} from './db'
+import {
+  formatPackageSize,
+  formatWon,
+  unitHeadline,
+  vsTarget,
+} from './lib'
 
 type Card = {
   item: Item
@@ -27,6 +39,9 @@ export function Home() {
     })
   }, [])
 
+  const wishCount = items.filter((i) => !isPurchased(i)).length
+  const doneCount = items.filter((i) => isPurchased(i)).length
+
   const cards = useMemo<Card[]>(() => {
     const byItem = new Map<number, Sighting[]>()
     for (const s of sightings) {
@@ -38,7 +53,7 @@ export function Home() {
     return items
       .map((item) => {
         const list = item.id ? (byItem.get(item.id) ?? []) : []
-        return { item, cheapest: cheapestOf(list), count: list.length }
+        return { item, cheapest: cheapestForItem(list, item), count: list.length }
       })
       .filter((card) => {
         const bought = isPurchased(card.item)
@@ -58,21 +73,25 @@ export function Home() {
 
   return (
     <div className="page">
-      <header className="topbar">
-        <div className="brand">
-          <strong>Cheeep</strong>
-          <span>사고 싶은 것 · 이름만 남겨도 됨</span>
-        </div>
+      <header className="home-hero">
+        <h1>Cheeep</h1>
+        <p>사고 싶은 건, 쌀 때 사자.</p>
       </header>
 
-      <input
-        className="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder="위시 이름이나 구입처 검색"
-        type="search"
-        enterKeyHint="search"
-      />
+      <label className="search-wrap">
+        <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden>
+          <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
+          <path d="M20 20l-3.5-3.5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        </svg>
+        <input
+          className="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="물건이나 구입처 검색"
+          type="search"
+          enterKeyHint="search"
+        />
+      </label>
 
       <div className="tabs">
         <button
@@ -80,14 +99,14 @@ export function Home() {
           type="button"
           onClick={() => setTab('open')}
         >
-          위시
+          위시 {wishCount}
         </button>
         <button
           className={tab === 'done' ? 'tab active' : 'tab'}
           type="button"
           onClick={() => setTab('done')}
         >
-          구매완료
+          구매완료 {doneCount}
         </button>
       </div>
 
@@ -118,7 +137,7 @@ export function Home() {
             <>
               <p>사고 싶은 이름을 적으세요. 가격이랑 사진은 나중에 매장에서.</p>
               <Link className="btn" to="/new">
-                위시에 넣기
+                ＋ 위시 추가
               </Link>
             </>
           )}
@@ -128,67 +147,88 @@ export function Home() {
           {cards.map((card) => {
             const id = card.item.id
             if (!id) return null
+            const stingy = isStingy(card.item)
+            const unit = card.item.comparisonUnit
+            const unitWon =
+              stingy && unit && card.cheapest
+                ? unitPriceOf(card.cheapest, unit)
+                : undefined
             return (
               <Link
-                className={isPurchased(card.item) ? 'item-card bought' : 'item-card'}
+                className={isPurchased(card.item) ? 'price-card bought' : 'price-card'}
                 key={id}
                 to={`/items/${id}`}
               >
-                <Thumb blob={card.cheapest?.photoBlob} alt={card.item.name} />
-                <div className="card-body">
+                <div className="price-card-top">
                   <h2>{card.item.name}</h2>
-                  {isPurchased(card.item) && card.item.paidPrice != null ? (
-                    <>
-                      <span className="bought-badge">구매완료</span>
-                      <p className="price">{formatWon(card.item.paidPrice)}</p>
-                      <p className="meta">
-                        구매한 금액
-                        {card.item.purchasedAt
-                          ? ` · ${formatDate(card.item.purchasedAt)}`
-                          : ''}
-                      </p>
-                      {card.item.targetPrice != null ? (
-                        <p className="meta">
-                          {vsTarget(card.item.paidPrice, card.item.targetPrice)}
-                        </p>
-                      ) : null}
-                    </>
-                  ) : card.cheapest ? (
-                    <>
-                      <span className="best">최저가 · {card.cheapest.store}</span>
-                      {card.item.targetPrice != null ? (
-                        <span
-                          className={
-                            card.cheapest.price <= card.item.targetPrice
-                              ? 'best'
-                              : 'wait-badge'
-                          }
-                          style={{ marginLeft: 6 }}
-                        >
-                          {card.cheapest.price <= card.item.targetPrice
-                            ? '기준가 이하'
-                            : '기준가보다 비쌈'}
-                        </span>
-                      ) : null}
-                      <p className="price">{formatWon(card.cheapest.price)}</p>
-                      <p className="meta">
-                        {formatDate(card.cheapest.seenAt)} · 기록 {card.count}건
-                        {card.item.targetPrice != null
-                          ? ` · 기준가 ${formatWon(card.item.targetPrice)}`
-                          : ''}
-                      </p>
-                    </>
-                  ) : (
-                    <p className="meta">
-                      {card.item.targetPrice != null
-                        ? `기준가 ${formatWon(card.item.targetPrice)} · 매장 가격은 나중에`
-                        : '위시만 남겨 둠 · 가격은 나중에'}
-                    </p>
-                  )}
+                  {stingy ? <span className="mode-tag">단위비교</span> : null}
+                  {isPurchased(card.item) ? (
+                    <span className="bought-badge">구매완료</span>
+                  ) : null}
                 </div>
+
+                {isPurchased(card.item) && card.item.paidPrice != null ? (
+                  <>
+                    <p className="kpi-label">구매가</p>
+                    <p className="kpi">
+                      {card.item.paidPrice.toLocaleString('ko-KR')}
+                      <span>원</span>
+                    </p>
+                    <p className="price-sub">
+                      {card.item.targetPrice != null
+                        ? vsTarget(card.item.paidPrice, card.item.targetPrice)
+                        : '실제로 산 금액'}
+                    </p>
+                  </>
+                ) : card.cheapest && stingy && unit && unitWon != null ? (
+                  <>
+                    <p className="kpi-label">{unitHeadline(unit)}</p>
+                    <p className="kpi">
+                      {Math.round(unitWon).toLocaleString('ko-KR')}
+                      <span>원</span>
+                    </p>
+                    <p className="price-sub">
+                      {card.cheapest.store}
+                      {card.cheapest.packageSize != null
+                        ? ` · ${formatPackageSize(card.cheapest.packageSize, unit)}`
+                        : ''}
+                      {` · ${formatWon(card.cheapest.price)}`}
+                    </p>
+                    <p className="price-foot">{card.count}곳에서 가격 확인</p>
+                  </>
+                ) : card.cheapest ? (
+                  <>
+                    <p className="kpi-label">최저가</p>
+                    <p className="kpi">
+                      {card.cheapest.price.toLocaleString('ko-KR')}
+                      <span>원</span>
+                    </p>
+                    <p className="price-sub">{card.cheapest.store}</p>
+                    <p className="price-foot">
+                      {card.item.targetPrice != null
+                        ? vsTarget(card.cheapest.price, card.item.targetPrice)
+                        : `${card.count}곳에서 가격 확인`}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="kpi-label">최저가</p>
+                    <p className="kpi muted-kpi">아직 없음</p>
+                    <p className="price-sub">
+                      {card.item.targetPrice != null
+                        ? `기준가 ${formatWon(card.item.targetPrice)}`
+                        : '매장에서 가격을 남기면 여기 뜹니다'}
+                    </p>
+                  </>
+                )}
               </Link>
             )
           })}
+          {tab === 'open' ? (
+            <Link className="add-wish" to="/new">
+              ＋ 위시 추가
+            </Link>
+          ) : null}
         </div>
       )}
     </div>

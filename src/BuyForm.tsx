@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { cheapestOf, db, isPurchased, markPurchased } from './db'
+import { cheapestForItem, db, isPurchased, markPurchased } from './db'
 import { parsePrice } from './lib'
 
 export function BuyForm() {
@@ -23,7 +23,7 @@ export function BuyForm() {
         return
       }
       const list = await db.sightings.where('itemId').equals(itemId).toArray()
-      const best = cheapestOf(list)
+      const best = cheapestForItem(list, item)
       if (best) setPrice(String(best.price))
     })()
   }, [itemId])

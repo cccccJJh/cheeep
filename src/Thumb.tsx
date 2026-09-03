@@ -15,7 +15,7 @@ export function Thumb({
 }: Props) {
   const url = useBlobUrl(blob)
   if (!url) {
-    return <div className="thumb-fallback">{fallback}</div>
+    return <div className={`thumb-fallback ${className}`}>{fallback}</div>
   }
   return <img className={className} src={url} alt={alt} />
 }
