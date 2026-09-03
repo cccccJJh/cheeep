@@ -35,10 +35,12 @@ function IconUndo() {
   )
 }
 
+type Tone = 'add' | 'record' | 'undo'
+
 type Props = {
   right:
-    | { kind: 'link'; to: string; label: string; icon: 'plus' | 'undo' }
-    | { kind: 'action'; label: string; icon: 'undo'; onClick: () => void }
+    | { kind: 'link'; to: string; label: string; icon: 'plus' | 'undo'; tone: Tone }
+    | { kind: 'action'; label: string; icon: 'undo'; tone: Tone; onClick: () => void }
 }
 
 export function BottomNav({ right }: Props) {
@@ -49,12 +51,12 @@ export function BottomNav({ right }: Props) {
         위시
       </NavLink>
       {right.kind === 'link' ? (
-        <Link to={right.to} className="nav-action">
+        <Link to={right.to} className={`nav-action nav-${right.tone}`}>
           {right.icon === 'undo' ? <IconUndo /> : <IconPlus />}
           {right.label}
         </Link>
       ) : (
-        <button className="nav-action" type="button" onClick={right.onClick}>
+        <button className={`nav-action nav-${right.tone}`} type="button" onClick={right.onClick}>
           <IconUndo />
           {right.label}
         </button>

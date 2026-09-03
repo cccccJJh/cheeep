@@ -274,16 +274,11 @@ export function Home() {
               </Link>
             )
           })}
-          {tab === 'open' ? (
-            <Link className="add-wish" to="/new">
-              ＋ 위시 추가
-            </Link>
-          ) : null}
         </div>
       )}
     </div>
     <BottomNav
-      right={{ kind: 'link', to: '/new', label: '위시 추가', icon: 'plus' }}
+      right={{ kind: 'link', to: '/new', label: '위시 추가', icon: 'plus', tone: 'add' }}
     />
     </>
   )

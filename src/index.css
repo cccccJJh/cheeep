@@ -720,10 +720,21 @@ a {
 }
 
 .nav-action {
-  color: var(--teal);
   font-size: 11px;
   line-height: 1.25;
   padding: 0 8px;
+}
+
+.nav-add {
+  color: var(--teal);
+}
+
+.nav-record {
+  color: #3b6f8a;
+}
+
+.nav-undo {
+  color: #a56b3c;
 }
 
 .form {

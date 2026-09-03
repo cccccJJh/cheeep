@@ -388,6 +388,7 @@ export function ItemDetail() {
           kind: 'action',
           label: '위시로 되돌리기',
           icon: 'undo',
+          tone: 'undo',
           onClick: () => void onClearPurchase(),
         }}
       />
@@ -398,6 +399,7 @@ export function ItemDetail() {
           to: `/items/${itemId}/record`,
           label: '가격 기록',
           icon: 'plus',
+          tone: 'record',
         }}
       />
     )}
