@@ -1,3 +1,4 @@
+import { PackageFields, parsePackage, type SizeUnit } from './PackageFields'
 import { useEffect, useMemo, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
@@ -28,6 +29,9 @@ export function SightingForm() {
   const [stingy, setStingy] = useState(false)
   const [unit, setUnit] = useState<ComparisonUnit>()
   const [packageSize, setPackageSize] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [capacity, setCapacity] = useState('')
+  const [capacityUnit, setCapacityUnit] = useState<SizeUnit>('g')
   const [price, setPrice] = useState('')
   const [store, setStore] = useState('')
   const [memo, setMemo] = useState('')
@@ -44,9 +48,12 @@ export function SightingForm() {
       setStingy(item ? isStingy(item) : false)
       setUnit(item?.comparisonUnit)
       setStores(await loadStoreNames())
-      if (!sightingId) return
+      if (!sightingId) {
+        setQuantity(item?.quantity == null ? '' : String(item.quantity)); setCapacity(item?.capacity == null ? '' : String(item.capacity)); setCapacityUnit(item?.capacityUnit ?? 'g'); return
+      }
       const existing = await db.sightings.get(sightingId)
       if (!existing) return
+      setQuantity(existing.quantity == null ? '' : String(existing.quantity)); setCapacity(existing.capacity == null ? '' : String(existing.capacity)); setCapacityUnit(existing.capacityUnit ?? 'g')
       setPrice(String(existing.price))
       setStore(existing.store)
       setMemo(existing.memo ?? '')
@@ -60,20 +67,23 @@ export function SightingForm() {
     if (!stingy || !unit) return null
     const parsedPrice = parsePrice(price)
     const parsedSize = parsePrice(packageSize)
-    if (parsedPrice == null || parsedSize == null) return null
+    if (parsedPrice == null) return null
+    let packageInfo
+    try { packageInfo = parsePackage(quantity, capacity, capacityUnit) } catch { return null }
     const won = unitPriceOf(
       {
         itemId,
         price: parsedPrice,
         store: '',
         seenAt: 0,
-        packageSize: parsedSize,
+        packageSize: parsedSize ?? undefined,
+        ...packageInfo,
       },
       unit,
     )
     if (won == null) return null
     return `${unitHeadline(unit)} ${Math.round(won).toLocaleString('ko-KR')}원`
-  }, [itemId, packageSize, price, stingy, unit])
+  }, [itemId, packageSize, price, stingy, unit, quantity, capacity, capacityUnit])
 
   async function onPhoto(file?: File) {
     if (!file) return
@@ -92,8 +102,10 @@ export function SightingForm() {
       setError('구입처를 적어 주세요.')
       return
     }
+    let packageInfo
+    try { packageInfo = parsePackage(quantity, capacity, capacityUnit) } catch (e) { setError((e as Error).message); return }
     let size: number | undefined
-    if (stingy) {
+    if (stingy && !quantity.trim() && !capacity.trim()) {
       const parsedSize = parsePrice(packageSize)
       if (parsedSize == null) {
         setError('용량 또는 수량을 숫자로 적어 주세요.')
@@ -111,6 +123,7 @@ export function SightingForm() {
     setBusy(true)
     const data: Omit<Sighting, 'id'> = {
       itemId,
+      ...packageInfo,
       price: parsed,
       store: storeName,
       memo: memo.trim() || undefined,
@@ -118,6 +131,7 @@ export function SightingForm() {
       photoBlob: photo,
       ...(size != null ? { packageSize: size } : {}),
     }
+    if (stingy && unit && unitPriceOf(data, unit) == null) { setBusy(false); setError(unit === 'each' ? '개수를 입력해 주세요.' : '비교 단위에 맞는 개당 용량과 단위를 입력해 주세요.'); return }
     await saveSighting(data, sightingId)
     navigate(`/items/${itemId}`)
   }
@@ -143,7 +157,8 @@ export function SightingForm() {
             <span>원</span>
           </div>
         </label>
-        {stingy && unit ? (
+        <PackageFields quantity={quantity} capacity={capacity} unit={capacityUnit} onQuantity={setQuantity} onCapacity={setCapacity} onUnit={setCapacityUnit} />
+        {stingy && unit && packageSize.trim() && !quantity.trim() && !capacity.trim() ? (
           <label>
             용량
             <div className="money-field">

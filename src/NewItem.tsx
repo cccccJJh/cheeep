@@ -1,3 +1,4 @@
+import { PackageFields, parsePackage, type SizeUnit } from './PackageFields'
 import { PhotoPicker } from './PhotoPicker'
 import { useCategories } from './Categories'
 import { BottomNav } from './BottomNav'
@@ -20,6 +21,9 @@ export function NewItem() {
   const [photo, setPhoto] = useState<Blob>()
   const [name, setName] = useState(preset)
   const [target, setTarget] = useState('')
+  const [quantity, setQuantity] = useState('')
+  const [capacity, setCapacity] = useState('')
+  const [capacityUnit, setCapacityUnit] = useState<SizeUnit>('g')
   const [error, setError] = useState('')
 
   async function onSubmit(e: FormEvent) {
@@ -35,7 +39,9 @@ export function NewItem() {
       return
     }
     if (selected == null) { setError('카테고리를 먼저 만들어 주세요.'); return }
-    await createItem(trimmed, targetPrice, selected, photo)
+    let packageInfo
+    try { packageInfo = parsePackage(quantity, capacity, capacityUnit) } catch (e) { setError((e as Error).message); return }
+    await createItem(trimmed, targetPrice, selected, photo, packageInfo)
     navigate('/')
   }
 
@@ -72,6 +78,7 @@ export function NewItem() {
             placeholder="예: 3000 · 비워 둬도 됨"
           />
         </label>
+        <PackageFields quantity={quantity} capacity={capacity} unit={capacityUnit} onQuantity={setQuantity} onCapacity={setCapacity} onUnit={setCapacityUnit} />
         {error ? <p className="error">{error}</p> : null}
         <button className="btn" type="submit">
           위시에 저장

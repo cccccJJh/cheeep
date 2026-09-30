@@ -1,8 +1,9 @@
+import type { PackageInfo } from './PackageFields'
 import Dexie, { type EntityTable } from 'dexie'
 
 export type ComparisonUnit = '100g' | '100ml' | 'each'
 
-export type Item = {
+export type Item = PackageInfo & {
   id?: number
   name: string
   categoryId?: number
@@ -18,7 +19,7 @@ export type Item = {
   comparisonUnit?: ComparisonUnit
 }
 
-export type Sighting = {
+export type Sighting = PackageInfo & {
   id?: number
   itemId: number
   price: number
@@ -108,6 +109,14 @@ export function unitPriceOf(
   sighting: Sighting,
   unit: ComparisonUnit,
 ): number | undefined {
+  if (sighting.quantity != null || sighting.capacity != null) {
+    if (unit === 'each') return sighting.price / (sighting.quantity ?? 1)
+    if (sighting.capacity == null || !sighting.capacityUnit) return undefined
+    const mass = sighting.capacityUnit === 'g' || sighting.capacityUnit === 'kg'
+    if ((unit === '100g') !== mass) return undefined
+    const scale = sighting.capacityUnit === 'kg' || sighting.capacityUnit === 'L' ? 1000 : 1
+    return unitPriceFrom(sighting.price, sighting.capacity * scale * (sighting.quantity ?? 1), unit)
+  }
   return unitPriceFrom(sighting.price, sighting.packageSize, unit)
 }
 
@@ -173,9 +182,11 @@ export async function createItem(
   targetPrice?: number,
   categoryId?: number,
   photoBlob?: Blob,
+  packageInfo: PackageInfo = {},
 ): Promise<number> {
   const now = Date.now()
   const id = await db.items.add({
+    ...packageInfo,
     name: name.trim(),
     categoryId,
     photoBlob,

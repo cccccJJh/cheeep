@@ -1062,3 +1062,63 @@ label {
   outline-offset: 2px;
 }
 .photo-modal-head .btn-ghost { min-height: 32px; }
+
+/* Responsive page and record layouts. */
+.app-shell { --content-width: 480px; max-width: var(--content-width); }
+.nav { max-width: var(--content-width, 480px); }
+.category-bar { max-width: 100%; }
+.category-bar select { min-width: 0; max-width: 100%; }
+.record-row {
+  grid-template-columns: 22px 64px minmax(0, 1fr) 36px;
+  align-items: start;
+}
+.record-row > .num { padding-top: 4px; }
+.record-body { min-width: 0; }
+.record-store { flex-wrap: wrap; overflow-wrap: anywhere; }
+.record-store .best { flex-shrink: 0; }
+.record-line, .record-unit { overflow-wrap: anywhere; }
+.record-row > .more-wrap { grid-column: 4; grid-row: 1; }
+.more-menu { z-index: 10; }
+.price-card-top h2, .detail-head h1, .back, .price-sub, .price-foot,
+.receipt-store, .pick-store, .pick-line { overflow-wrap: anywhere; }
+.price-card-top { flex-wrap: wrap; }
+.price-card-top h2 { flex-basis: 140px; }
+.card-tags { flex-wrap: wrap; max-width: 100%; }
+.topbar > .back { min-width: 0; }
+.detail-header-actions { flex-shrink: 0; gap: 8px; }
+.money-field input { min-width: 0; width: 100%; }
+.money-field span { flex-shrink: 0; }
+.field { min-width: 0; max-width: 100%; }
+.form, .fact-extra, .pick-row > div { min-width: 0; }
+.modal { max-height: calc(100dvh - 40px); }
+.expanded-photo { display: block; height: auto; max-height: calc(100dvh - 140px); }
+.photo-modal { width: fit-content; max-width: min(800px, 100%); }
+.photo-modal .expanded-photo-button { max-width: 100%; }
+
+@media (max-width: 359px) {
+  .record-row { grid-template-columns: 18px 52px minmax(0, 1fr) 32px; gap: 6px; padding: 10px; }
+  .record-photo { width: 52px; height: 60px; }
+  .more-btn { width: 32px; }
+  .unit-picks { grid-template-columns: 1fr; }
+  .category-row { flex-wrap: wrap; }
+  .category-row span { flex-basis: 100%; }
+}
+
+@media (min-width: 768px) {
+  .app-shell { --content-width: 960px; }
+  .page { padding: 28px 32px 36px; }
+  .category-bar { padding: 20px 32px 0; }
+  .card-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); align-items: start; gap: 20px; }
+  .detail-page { max-width: 800px; margin: 0 auto; }
+  .detail-page .representative { height: 340px; }
+  .page > .form { max-width: 640px; margin: 20px auto 0; }
+  .record-row { grid-template-columns: 28px 80px minmax(0, 1fr) 36px; gap: 14px; padding: 18px; }
+  .record-photo { width: 80px; height: 88px; }
+}
+
+.package-fields { display:grid; grid-template-columns:1fr 1.5fr; gap:12px; }
+.package-fields > label { min-width:0; }
+.capacity-field { display:flex; gap:8px; min-width:0; }
+.capacity-field input { flex:1; width:0; }
+.capacity-field select { width:76px; flex-shrink:0; padding:12px 8px; }
+@media(max-width:359px) { .package-fields { grid-template-columns:1fr; } }

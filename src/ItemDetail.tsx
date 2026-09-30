@@ -384,6 +384,8 @@ export function ItemDetail() {
                   ) : null}
                   <p className="record-line">
                     {formatWon(s.price)}
+                    {s.quantity != null ? ` · ${s.quantity}개` : ''}
+                    {s.capacity != null ? ` · 개당 ${s.capacity}${s.capacityUnit ?? ''}` : ''}
                     {s.packageSize != null && unit
                       ? ` · ${formatPackageSize(s.packageSize, unit)}`
                       : s.packageSize != null
