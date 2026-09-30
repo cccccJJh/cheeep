@@ -78,6 +78,10 @@ export function ItemDetail() {
   const [targetError, setTargetError] = useState('')
   const [photoBusy, setPhotoBusy] = useState(false)
   const [photoError, setPhotoError] = useState('')
+  const [editOpen, setEditOpen] = useState(false)
+  const [nameDraft, setNameDraft] = useState('')
+  const [nameError, setNameError] = useState('')
+  const [nameSaving, setNameSaving] = useState(false)
 
   async function reload() {
     const nextItem = await db.items.get(itemId)
@@ -126,6 +130,7 @@ export function ItemDetail() {
   }
 
   const itemName = item.name
+  const mainPhoto = representativePhoto(sightings, item)
   const stingy = isStingy(item)
   const unit = item.comparisonUnit
   const bestIds = new Set(
@@ -189,17 +194,18 @@ export function ItemDetail() {
         <Link className="back" to="/">
           ‹ 위시
         </Link>
+        <div className="detail-header-actions"><button type="button" onClick={() => { setNameDraft(item.name); setNameError(''); setEditOpen(true) }}>수정</button>
         <button className="btn-danger" type="button" onClick={() => void onDeleteItem()}>
           삭제
-        </button>
+        </button></div>
       </header>
 
       <div className="detail-head">
         <h1>{item.name}</h1>
       </div>
 
-      <Photo blob={representativePhoto(sightings, item)} large alt={item.name} />
-      <label className="btn-secondary photo-btn detail-photo-change">
+      <Photo blob={mainPhoto} large alt={item.name} />
+      {!mainPhoto && <label className="btn-secondary photo-btn detail-photo-change">
         {photoBusy ? '사진 처리 중…' : '사진 변경'}
         <input type="file" accept="image/*" aria-label="사진 변경" disabled={photoBusy} onChange={async e => {
           const file = e.target.files?.[0]
@@ -208,14 +214,12 @@ export function ItemDetail() {
           setPhotoBusy(true); setPhotoError('')
           try {
             const photoBlob = await compressImage(file)
-            const bestPhoto = bestSightingsForItem(sightings, item).find(s => s.photoBlob)
-            if (bestPhoto?.id != null) await db.sightings.update(bestPhoto.id, { photoBlob })
-            else await db.items.update(itemId, { photoBlob, updatedAt: Date.now() })
+            await db.items.update(itemId, { photoBlob, updatedAt: Date.now() })
             await reload()
           } catch { setPhotoError('사진을 변경하지 못했습니다. 다시 시도해 주세요.') }
           finally { setPhotoBusy(false) }
         }} />
-      </label>
+      </label>}
       {photoError && <p className="error" role="alert">{photoError}</p>}
 
       <div className="detail-actions"><Link className="btn" to={`/items/${itemId}/record`}>＋ 가격 기록</Link>{bought && <button type="button" onClick={() => void onClearPurchase()}>위시로 되돌리기</button>}</div>
@@ -417,6 +421,20 @@ export function ItemDetail() {
         </ol>
       )}
     </div>
+    {editOpen && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="wish-edit-title">
+      <div className="section-row"><h2 id="wish-edit-title">위시 수정</h2><button type="button" disabled={nameSaving} onClick={() => setEditOpen(false)}>취소</button></div>
+      <form onSubmit={async e => {
+        e.preventDefault()
+        const name = nameDraft.trim()
+        if (!name) { setNameError('이름을 입력해 주세요.'); return }
+        setNameSaving(true); setNameError('')
+        try { await db.items.update(itemId, { name, updatedAt: Date.now() }); await reload(); setEditOpen(false) }
+        catch { setNameError('저장하지 못했습니다. 다시 시도해 주세요.') }
+        finally { setNameSaving(false) }
+      }}><label>이름<input className="field" aria-label="위시 이름" autoFocus value={nameDraft} onChange={e => setNameDraft(e.target.value)} /></label>
+      {nameError && <p className="error" role="alert">{nameError}</p>}
+      <button className="btn" type="submit" disabled={nameSaving}>{nameSaving ? '저장 중…' : '저장'}</button></form>
+    </section></div>}
     {bought ? (
       <BottomNav
         right={{
