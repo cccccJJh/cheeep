@@ -1,3 +1,6 @@
+import { useCategories } from './Categories'
+import { Photo } from './Photo'
+import { representativePhoto } from './db'
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
@@ -62,6 +65,7 @@ function purchaseLines(item: Item): string[] {
 }
 
 export function ItemDetail() {
+  const { categories } = useCategories()
   const { id } = useParams()
   const navigate = useNavigate()
   const itemId = Number(id)
@@ -193,6 +197,9 @@ export function ItemDetail() {
         <h1>{item.name}</h1>
       </div>
 
+      <Photo blob={representativePhoto(sightings, item)} large alt={item.name} />
+      <label className="category-move">카테고리 <select aria-label="카테고리" value={item.categoryId ?? ''} onChange={async e => { await db.items.update(itemId, { categoryId: Number(e.target.value), updatedAt: Date.now() }); await reload() }}>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      <div className="detail-actions"><Link className="btn" to={`/items/${itemId}/record`}>＋ 가격 기록</Link>{bought && <button type="button" onClick={() => void onClearPurchase()}>위시로 되돌리기</button>}</div>
       <div className="fact-list">
         <button
           className="fact-row"
@@ -339,6 +346,7 @@ export function ItemDetail() {
             return (
               <li className={isBest ? 'record-row best-row' : 'record-row'} key={s.id}>
                 <span className="num">{i + 1}</span>
+                <Photo blob={s.photoBlob} alt={s.store} />
                 <div className="record-body">
                   <p className="record-store">
                     {s.store}

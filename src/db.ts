@@ -5,6 +5,7 @@ export type ComparisonUnit = '100g' | '100ml' | 'each'
 export type Item = {
   id?: number
   name: string
+  categoryId?: number
   createdAt: number
   updatedAt: number
   purchasedAt?: number
@@ -30,7 +31,10 @@ export type Sighting = {
 export type NewItem = Omit<Item, 'id'>
 export type NewSighting = Omit<Sighting, 'id'>
 
+export type Category = { id?: number; name: string }
+
 const db = new Dexie('cheeep') as Dexie & {
+  categories: EntityTable<Category, 'id'>
   items: EntityTable<Item, 'id'>
   sightings: EntityTable<Sighting, 'id'>
 }
@@ -49,6 +53,30 @@ db.version(3).stores({
   items: '++id, name, updatedAt, purchasedAt',
   sightings: '++id, itemId, price, seenAt, store',
 })
+
+db.version(4).stores({
+  categories: '++id, name',
+  items: '++id, name, updatedAt, purchasedAt, categoryId',
+  sightings: '++id, itemId, price, seenAt, store',
+}).upgrade(async (tx) => {
+  const categoryId = await tx.table('categories').add({ name: '기본' })
+  await tx.table('items').toCollection().modify({ categoryId })
+})
+
+export async function deleteCategory(categoryId: number) {
+  await db.transaction('rw', db.categories, db.items, db.sightings, async () => {
+    const keys = await db.items.where('categoryId').equals(categoryId).primaryKeys()
+    const ids = keys.filter((id): id is number => id != null)
+    await db.sightings.where('itemId').anyOf(ids).delete()
+    await db.items.bulkDelete(ids)
+    await db.categories.delete(categoryId)
+  })
+}
+
+export function representativePhoto(list: Sighting[], item: Item) {
+  return bestSightingsForItem(list, item).find(s => s.photoBlob)?.photoBlob
+    ?? sortSightingsForItem(list, item).find(s => s.photoBlob)?.photoBlob
+}
 
 export { db }
 
@@ -141,10 +169,12 @@ export async function setStingyMode(
 export async function createItem(
   name: string,
   targetPrice?: number,
+  categoryId?: number,
 ): Promise<number> {
   const now = Date.now()
   const id = await db.items.add({
     name: name.trim(),
+    categoryId,
     createdAt: now,
     updatedAt: now,
     ...(targetPrice != null ? { targetPrice } : {}),

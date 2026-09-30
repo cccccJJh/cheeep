@@ -1,4 +1,4 @@
-import { NavLink, Link } from 'react-router-dom'
+import { NavLink } from 'react-router-dom'
 
 function IconHeart() {
   return (
@@ -21,46 +21,10 @@ function IconPlus() {
   )
 }
 
-function IconUndo() {
-  return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden>
-      <path
-        d="M9 10H4V5M4.6 14A8 8 0 1 0 6 8.2"
-        stroke="currentColor"
-        strokeWidth="1.8"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  )
-}
-
-type Tone = 'add' | 'record' | 'undo'
-
-type Props = {
-  right:
-    | { kind: 'link'; to: string; label: string; icon: 'plus' | 'undo'; tone: Tone }
-    | { kind: 'action'; label: string; icon: 'undo'; tone: Tone; onClick: () => void }
-}
-
-export function BottomNav({ right }: Props) {
-  return (
-    <nav className="nav">
-      <NavLink to="/" end className={({ isActive }) => (isActive ? 'nav-wish active' : 'nav-wish')}>
-        <IconHeart />
-        위시
-      </NavLink>
-      {right.kind === 'link' ? (
-        <Link to={right.to} className={`nav-action nav-${right.tone}`}>
-          {right.icon === 'undo' ? <IconUndo /> : <IconPlus />}
-          {right.label}
-        </Link>
-      ) : (
-        <button className={`nav-action nav-${right.tone}`} type="button" onClick={right.onClick}>
-          <IconUndo />
-          {right.label}
-        </button>
-      )}
-    </nav>
-  )
+type Props = { right?: unknown }
+export function BottomNav(_props: Props) {
+  return <nav className="nav">
+    <NavLink to="/" end className={({ isActive }) => isActive ? 'nav-wish active' : 'nav-wish'}><IconHeart />위시목록</NavLink>
+    <NavLink to="/new" className={({ isActive }) => isActive ? 'nav-action nav-add active' : 'nav-action nav-add'}><IconPlus />추가</NavLink>
+  </nav>
 }

@@ -1,3 +1,7 @@
+import { useCategories } from './Categories'
+import { Thumb } from './Thumb'
+import { liveQuery } from 'dexie'
+import { representativePhoto } from './db'
 import { useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { BottomNav } from './BottomNav'
@@ -21,6 +25,7 @@ const MAX_MIN_STORES = 3
 
 type Card = {
   item: Item
+  photo?: Blob
   count: number
   minPrice?: number
   minSightings: Sighting[]
@@ -74,6 +79,7 @@ function minPriceSubline(item: Item, ties: Sighting[], shown: Sighting[]): strin
 }
 
 export function Home() {
+  const { selected } = useCategories()
   const navigate = useNavigate()
   const [query, setQuery] = useState('')
   const [tab, setTab] = useState<'open' | 'done'>('open')
@@ -82,17 +88,14 @@ export function Home() {
   const [sightings, setSightings] = useState<Sighting[]>([])
 
   useEffect(() => {
-    void Promise.all([
-      db.items.orderBy('id').reverse().toArray(),
-      db.sightings.toArray(),
-    ]).then(([nextItems, nextSightings]) => {
-      setItems(nextItems)
-      setSightings(nextSightings)
-    })
+    const sub = liveQuery(() => Promise.all([
+      db.items.orderBy('id').reverse().toArray(), db.sightings.toArray(),
+    ])).subscribe(([nextItems, nextSightings]) => { setItems(nextItems); setSightings(nextSightings) })
+    return () => sub.unsubscribe()
   }, [])
 
-  const wishCount = items.filter((i) => !isPurchased(i)).length
-  const doneCount = items.filter((i) => isPurchased(i)).length
+  const wishCount = items.filter((i) => i.categoryId === selected && !isPurchased(i)).length
+  const doneCount = items.filter((i) => i.categoryId === selected && isPurchased(i)).length
 
   const cards = useMemo<Card[]>(() => {
     const byItem = new Map<number, Sighting[]>()
@@ -108,12 +111,14 @@ export function Home() {
         const minPrice = lowestTotalPrice(list)
         return {
           item,
+          photo: representativePhoto(list, item),
           count: list.length,
           minPrice,
           minSightings: minPrice == null ? [] : tiesForMinPrice(list, minPrice),
         }
       })
       .filter((card) => {
+        if (card.item.categoryId !== selected) return false
         const bought = isPurchased(card.item)
         if (tab === 'open' && bought) return false
         if (tab === 'done' && !bought) return false
@@ -125,7 +130,7 @@ export function Home() {
         )
         return nameHit || storeHit
       })
-  }, [items, query, sightings, tab])
+  }, [items, query, sightings, tab, selected])
 
   const trimmed = query.trim()
 
@@ -162,22 +167,7 @@ export function Home() {
         />
       </label>
 
-      <div className="tabs">
-        <button
-          className={tab === 'open' ? 'tab active' : 'tab'}
-          type="button"
-          onClick={() => setTab('open')}
-        >
-          위시 {wishCount}
-        </button>
-        <button
-          className={tab === 'done' ? 'tab active' : 'tab'}
-          type="button"
-          onClick={() => setTab('done')}
-        >
-          구매완료 {doneCount}
-        </button>
-      </div>
+      <label className="status-filter">표시 <select value={tab} onChange={e => setTab(e.target.value as 'open' | 'done')}><option value="open">위시 {wishCount}</option><option value="done">구매완료 {doneCount}</option></select></label>
 
       {cards.length === 0 ? (
         <div className="empty">
@@ -229,6 +219,7 @@ export function Home() {
                 key={id}
                 to={`/items/${id}`}
               >
+                <Thumb blob={card.photo} className="representative" alt={card.item.name} fallback="사진 없음" />
                 <div className="price-card-top">
                   <h2>{card.item.name}</h2>
                   <div className="card-tags">

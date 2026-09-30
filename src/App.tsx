@@ -1,3 +1,4 @@
+import { Categories } from './Categories'
 import { Navigate, Route, Routes } from 'react-router-dom'
 import { BestColorTest } from './BestColorTest'
 import { BuyForm } from './BuyForm'
@@ -11,7 +12,7 @@ import { TargetForm } from './TargetForm'
 export default function App() {
   return (
     <div className="app-shell">
-      <Routes>
+      <Categories><Routes>
         <Route path="/" element={<Home />} />
         <Route path="/new" element={<NewItem />} />
         <Route path="/items/:id" element={<ItemDetail />} />
@@ -22,7 +23,7 @@ export default function App() {
         <Route path="/nav-colors" element={<NavColorTest />} />
         <Route path="/best-colors" element={<BestColorTest />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+      </Routes></Categories>
     </div>
   )
 }

@@ -1,9 +1,12 @@
+import { useCategories } from './Categories'
+import { BottomNav } from './BottomNav'
 import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { createItem } from './db'
 import { parseOptionalPrice } from './lib'
 
 export function NewItem() {
+  const { selected } = useCategories()
   const navigate = useNavigate()
   const location = useLocation()
   const preset =
@@ -29,12 +32,13 @@ export function NewItem() {
       setError('기준가는 숫자로 적어 주세요. 비워 둬도 됩니다.')
       return
     }
-    await createItem(trimmed, targetPrice)
+    if (selected == null) { setError('카테고리를 먼저 만들어 주세요.'); return }
+    await createItem(trimmed, targetPrice, selected)
     navigate('/')
   }
 
   return (
-    <div className="page">
+    <div className="page has-nav">
       <header className="topbar">
         <Link className="back" to="/">
           ← 위시
@@ -70,6 +74,7 @@ export function NewItem() {
           위시에 저장
         </button>
       </form>
+      <BottomNav />
     </div>
   )
 }
