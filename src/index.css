@@ -1040,3 +1040,25 @@ label {
 .detail-photo-change{display:flex;justify-content:center;align-items:center;min-height:44px;margin:12px 0 20px}
 
 .photo-modal-head{display:flex;justify-content:flex-end;margin-bottom:10px}.expanded-photo-button{display:block;width:100%;padding:0;border:0;background:transparent;cursor:pointer}.detail-header-actions{display:flex;align-items:center;gap:14px}
+
+/* Match the newly added controls to the existing app theme. */
+.detail-header-actions .btn-ghost,
+.detail-header-actions .btn-danger {
+  min-height: 32px;
+  padding: 0 6px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.wish-edit-modal,
+.photo-modal {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow);
+}
+.wish-edit-modal .section-row { margin: 0; }
+.wish-edit-modal .field:focus {
+  outline: 2px solid var(--on-fg);
+  outline-offset: 2px;
+}
+.photo-modal-head .btn-ghost { min-height: 32px; }

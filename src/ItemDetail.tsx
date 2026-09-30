@@ -194,7 +194,7 @@ export function ItemDetail() {
         <Link className="back" to="/">
           ‹ 위시
         </Link>
-        <div className="detail-header-actions"><button type="button" onClick={() => { setNameDraft(item.name); setNameError(''); setEditOpen(true) }}>수정</button>
+        <div className="detail-header-actions"><button className="btn-ghost" type="button" onClick={() => { setNameDraft(item.name); setNameError(''); setEditOpen(true) }}>수정</button>
         <button className="btn-danger" type="button" onClick={() => void onDeleteItem()}>
           삭제
         </button></div>
@@ -421,8 +421,8 @@ export function ItemDetail() {
         </ol>
       )}
     </div>
-    {editOpen && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="wish-edit-title">
-      <div className="section-row"><h2 id="wish-edit-title">위시 수정</h2><button type="button" disabled={nameSaving} onClick={() => setEditOpen(false)}>취소</button></div>
+    {editOpen && <div className="modal-backdrop"><section className="modal wish-edit-modal" role="dialog" aria-modal="true" aria-labelledby="wish-edit-title">
+      <div className="section-row"><h2 id="wish-edit-title">위시 수정</h2><button className="btn-ghost" type="button" disabled={nameSaving} onClick={() => setEditOpen(false)}>취소</button></div>
       <form onSubmit={async e => {
         e.preventDefault()
         const name = nameDraft.trim()
