@@ -219,7 +219,7 @@ export function Home() {
                 key={id}
                 to={`/items/${id}`}
               >
-                <Thumb blob={card.photo} className="representative" alt={card.item.name} fallback="사진 없음" />
+                <Thumb blob={card.photo} className="representative" alt={card.item.name} fallback="🐥" />
                 <div className="price-card-top">
                   <h2>{card.item.name}</h2>
                   <div className="card-tags">

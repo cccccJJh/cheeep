@@ -11,11 +11,11 @@ export function Thumb({
   blob,
   className = 'thumb',
   alt = '',
-  fallback = '위시',
+  fallback = '🐥',
 }: Props) {
   const url = useBlobUrl(blob)
   if (!url) {
-    return <div className={`thumb-fallback ${className}`}>{fallback}</div>
+    return <div className={`thumb-fallback ${className}`} role="img" aria-label="사진 없음 · 병아리">{fallback}</div>
   }
   return <img className={className} src={url} alt={alt} />
 }
