@@ -1,3 +1,4 @@
+import { PhotoPicker } from './PhotoPicker'
 import { useCategories } from './Categories'
 import { BottomNav } from './BottomNav'
 import { useState, type FormEvent } from 'react'
@@ -16,6 +17,7 @@ export function NewItem() {
     typeof location.state.name === 'string'
       ? location.state.name
       : ''
+  const [photo, setPhoto] = useState<Blob>()
   const [name, setName] = useState(preset)
   const [target, setTarget] = useState('')
   const [error, setError] = useState('')
@@ -33,7 +35,7 @@ export function NewItem() {
       return
     }
     if (selected == null) { setError('카테고리를 먼저 만들어 주세요.'); return }
-    await createItem(trimmed, targetPrice, selected)
+    await createItem(trimmed, targetPrice, selected, photo)
     navigate('/')
   }
 
@@ -49,6 +51,7 @@ export function NewItem() {
         이름만 적어도 됩니다. 기준가는 이 정도면 사겠다는 금액이고, 안 적어도 돼요.
       </p>
       <form className="form" onSubmit={onSubmit}>
+        <PhotoPicker photo={photo} onChange={setPhoto} />
         <label>
           사고 싶은 것
           <input

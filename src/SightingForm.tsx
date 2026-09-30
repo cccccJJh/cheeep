@@ -188,7 +188,6 @@ export function SightingForm() {
           <input
             type="file"
             accept="image/*"
-            capture="environment"
             onChange={(e) => void onPhoto(e.target.files?.[0])}
           />
         </label>

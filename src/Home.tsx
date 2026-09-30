@@ -167,7 +167,10 @@ export function Home() {
         />
       </label>
 
-      <label className="status-filter">표시 <select value={tab} onChange={e => setTab(e.target.value as 'open' | 'done')}><option value="open">위시 {wishCount}</option><option value="done">구매완료 {doneCount}</option></select></label>
+      <div className="tabs">
+        <button className={tab === 'open' ? 'tab active' : 'tab'} type="button" onClick={() => setTab('open')}>위시 {wishCount}</button>
+        <button className={tab === 'done' ? 'tab active' : 'tab'} type="button" onClick={() => setTab('done')}>구매완료 {doneCount}</button>
+      </div>
 
       {cards.length === 0 ? (
         <div className="empty">

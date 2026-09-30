@@ -1034,3 +1034,5 @@ label {
 .modal-backdrop{position:fixed;inset:0;background:#0008;z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}.modal{background:#fff;color:#222;border-radius:20px;padding:22px;width:100%;max-width:430px;max-height:85dvh;overflow:auto}.modal button{cursor:pointer}.category-row{display:flex;gap:8px;align-items:center;padding:10px 0}.category-row span{flex:1;overflow-wrap:anywhere}.modal form{display:grid;gap:12px;margin-top:18px}.expanded-photo{width:100%;max-height:70dvh;object-fit:contain}.category-move{display:flex;gap:12px;align-items:center;margin:12px 0}.detail-actions{display:flex;gap:12px;align-items:center;margin:16px 0}.nav .active{font-weight:800}
 
 .thumb-fallback.representative{font-size:88px}.thumb-fallback.record-photo{font-size:36px}.thumb-fallback{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
+
+.wish-photo-picker{display:grid;gap:10px}.wish-photo-edit{margin:12px 0}.wish-photo-edit summary{padding:10px 0;cursor:pointer}

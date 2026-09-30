@@ -6,6 +6,7 @@ export type Item = {
   id?: number
   name: string
   categoryId?: number
+  photoBlob?: Blob
   createdAt: number
   updatedAt: number
   purchasedAt?: number
@@ -75,6 +76,7 @@ export async function deleteCategory(categoryId: number) {
 
 export function representativePhoto(list: Sighting[], item: Item) {
   return bestSightingsForItem(list, item).find(s => s.photoBlob)?.photoBlob
+    ?? item.photoBlob
     ?? sortSightingsForItem(list, item).find(s => s.photoBlob)?.photoBlob
 }
 
@@ -170,11 +172,13 @@ export async function createItem(
   name: string,
   targetPrice?: number,
   categoryId?: number,
+  photoBlob?: Blob,
 ): Promise<number> {
   const now = Date.now()
   const id = await db.items.add({
     name: name.trim(),
     categoryId,
+    photoBlob,
     createdAt: now,
     updatedAt: now,
     ...(targetPrice != null ? { targetPrice } : {}),
