@@ -1,5 +1,5 @@
 import { useCategories } from './Categories'
-import { Thumb } from './Thumb'
+import { Photo } from './Photo'
 import { liveQuery } from 'dexie'
 import { representativePhoto } from './db'
 import { useEffect, useMemo, useState } from 'react'
@@ -217,12 +217,12 @@ export function Home() {
                 ? minPriceSubline(card.item, card.minSightings, shown)
                 : ''
             return (
-              <Link
+              <div
                 className={isPurchased(card.item) ? 'price-card bought' : 'price-card'}
                 key={id}
-                to={`/items/${id}`}
               >
-                <Thumb blob={card.photo} className="representative" alt={card.item.name} fallback="🐥" />
+                <Photo blob={card.photo} large alt={card.item.name} />
+                <Link className="price-card-content" to={`/items/${id}`}>
                 <div className="price-card-top">
                   <h2>{card.item.name}</h2>
                   <div className="card-tags">
@@ -277,7 +277,8 @@ export function Home() {
                     </p>
                   </>
                 )}
-              </Link>
+                </Link>
+              </div>
             )
           })}
         </div>
