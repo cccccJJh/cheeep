@@ -1,5 +1,4 @@
-import { PhotoPicker } from './PhotoPicker'
-import { useCategories } from './Categories'
+import { compressImage } from './lib'
 import { Photo } from './Photo'
 import { representativePhoto } from './db'
 import { useEffect, useState } from 'react'
@@ -66,7 +65,6 @@ function purchaseLines(item: Item): string[] {
 }
 
 export function ItemDetail() {
-  const { categories } = useCategories()
   const { id } = useParams()
   const navigate = useNavigate()
   const itemId = Number(id)
@@ -78,6 +76,8 @@ export function ItemDetail() {
   const [targetOpen, setTargetOpen] = useState(false)
   const [targetDraft, setTargetDraft] = useState('')
   const [targetError, setTargetError] = useState('')
+  const [photoBusy, setPhotoBusy] = useState(false)
+  const [photoError, setPhotoError] = useState('')
 
   async function reload() {
     const nextItem = await db.items.get(itemId)
@@ -199,8 +199,25 @@ export function ItemDetail() {
       </div>
 
       <Photo blob={representativePhoto(sightings, item)} large alt={item.name} />
-      <details className="wish-photo-edit"><summary>위시 사진 추가·수정</summary><PhotoPicker photo={item.photoBlob} onChange={async photoBlob => { await db.items.update(itemId, { photoBlob, updatedAt: Date.now() }); await reload() }} /></details>
-      <label className="category-move">카테고리 <select aria-label="카테고리" value={item.categoryId ?? ''} onChange={async e => { await db.items.update(itemId, { categoryId: Number(e.target.value), updatedAt: Date.now() }); await reload() }}>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select></label>
+      <label className="btn-secondary photo-btn detail-photo-change">
+        {photoBusy ? '사진 처리 중…' : '사진 변경'}
+        <input type="file" accept="image/*" aria-label="사진 변경" disabled={photoBusy} onChange={async e => {
+          const file = e.target.files?.[0]
+          e.target.value = ''
+          if (!file) return
+          setPhotoBusy(true); setPhotoError('')
+          try {
+            const photoBlob = await compressImage(file)
+            const bestPhoto = bestSightingsForItem(sightings, item).find(s => s.photoBlob)
+            if (bestPhoto?.id != null) await db.sightings.update(bestPhoto.id, { photoBlob })
+            else await db.items.update(itemId, { photoBlob, updatedAt: Date.now() })
+            await reload()
+          } catch { setPhotoError('사진을 변경하지 못했습니다. 다시 시도해 주세요.') }
+          finally { setPhotoBusy(false) }
+        }} />
+      </label>
+      {photoError && <p className="error" role="alert">{photoError}</p>}
+
       <div className="detail-actions"><Link className="btn" to={`/items/${itemId}/record`}>＋ 가격 기록</Link>{bought && <button type="button" onClick={() => void onClearPurchase()}>위시로 되돌리기</button>}</div>
       <div className="fact-list">
         <button

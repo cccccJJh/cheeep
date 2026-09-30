@@ -1036,3 +1036,5 @@ label {
 .thumb-fallback.representative{font-size:88px}.thumb-fallback.record-photo{font-size:36px}.thumb-fallback{font-family:"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif}
 
 .wish-photo-picker{display:grid;gap:10px}.wish-photo-edit{margin:12px 0}.wish-photo-edit summary{padding:10px 0;cursor:pointer}
+
+.detail-photo-change{display:flex;justify-content:center;align-items:center;min-height:44px;margin:12px 0 20px}
