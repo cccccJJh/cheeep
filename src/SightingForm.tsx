@@ -64,13 +64,12 @@ export function SightingForm() {
   }, [itemId, sightingId])
 
   const liveUnit = useMemo(() => {
-    if (!stingy || !unit) return null
     const parsedPrice = parsePrice(price)
     const parsedSize = parsePrice(packageSize)
     if (parsedPrice == null) return null
     let packageInfo
     try { packageInfo = parsePackage(quantity, capacity, capacityUnit) } catch { return null }
-    const won = unitPriceOf(
+    const record = 
       {
         itemId,
         price: parsedPrice,
@@ -78,11 +77,14 @@ export function SightingForm() {
         seenAt: 0,
         packageSize: parsedSize ?? undefined,
         ...packageInfo,
-      },
-      unit,
-    )
-    if (won == null) return null
-    return `${unitHeadline(unit)} ${Math.round(won).toLocaleString('ko-KR')}원`
+      }
+    const lines: string[] = []
+    if (packageInfo.quantity != null) lines.push(`개당 ${Math.round(record.price / packageInfo.quantity).toLocaleString('ko-KR')}원`)
+    if (stingy && unit && (unit !== 'each' || !lines.length)) {
+      const won = unitPriceOf(record, unit)
+      if (won != null) lines.push(`${unitHeadline(unit)} ${Math.round(won).toLocaleString('ko-KR')}원`)
+    }
+    return lines.length ? lines.join(' · ') : null
   }, [itemId, packageSize, price, stingy, unit, quantity, capacity, capacityUnit])
 
   async function onPhoto(file?: File) {
@@ -131,7 +133,6 @@ export function SightingForm() {
       photoBlob: photo,
       ...(size != null ? { packageSize: size } : {}),
     }
-    if (stingy && unit && unitPriceOf(data, unit) == null) { setBusy(false); setError(unit === 'each' ? '개수를 입력해 주세요.' : '비교 단위에 맞는 개당 용량과 단위를 입력해 주세요.'); return }
     await saveSighting(data, sightingId)
     navigate(`/items/${itemId}`)
   }

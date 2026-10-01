@@ -201,6 +201,7 @@ export function ItemDetail() {
                     {s.store}
                     {isBest ? <span className="best">BEST</span> : null}
                   </p>
+                  {s.quantity != null && !(stingy && unit === 'each') && <p className="record-unit">개당 {Math.round(s.price / s.quantity).toLocaleString('ko-KR')}원</p>}
                   {stingy && unit && unitWon != null ? (
                     <p className="record-unit">
                       {unitHeadline(unit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
@@ -370,7 +371,7 @@ export function ItemDetail() {
                   [
                     ['100g', '100g'],
                     ['100ml', '100ml'],
-                    ['each', '1개'],
+                    ['each', '개당'],
                   ] as const
                 ).map(([value, label]) => (
                   <button
