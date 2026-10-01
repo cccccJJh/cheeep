@@ -1123,4 +1123,3 @@ label {
 .capacity-field select { width:76px; flex-shrink:0; padding:12px 8px; }
 @media(max-width:359px) { .package-fields { grid-template-columns:1fr; } }
 
-.price-card-content { display: block; }

@@ -204,8 +204,8 @@ export function ItemDetail() {
         <h1>{item.name}</h1>
       </div>
 
-      <Photo blob={mainPhoto} large alt={item.name} />
-      {!mainPhoto && <label className="btn-secondary photo-btn detail-photo-change">
+      {sightings.length === 0 && <Photo blob={item.photoBlob} large alt={item.name} />}
+      {sightings.length === 0 && !mainPhoto && <label className="btn-secondary photo-btn detail-photo-change">
         {photoBusy ? '사진 처리 중…' : '사진 변경'}
         <input type="file" accept="image/*" aria-label="사진 변경" disabled={photoBusy} onChange={async e => {
           const file = e.target.files?.[0]
