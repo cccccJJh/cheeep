@@ -50,11 +50,11 @@ export function Categories({ children }: { children: ReactNode }) {
       setSelected(Number(e.target.value)); if (location.pathname !== '/new') navigate('/')
     }}><option value="" disabled>카테고리 선택</option>{categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}<option value="manage">카테고리 관리…</option></select></div>
     {children}
-    {show && <div className="modal-backdrop"><section className="modal" role="dialog" aria-modal="true" aria-labelledby="category-title">
-      <div className="section-row"><h2 id="category-title">카테고리 관리</h2>{categories.length > 0 && <button type="button" onClick={() => setOpen(false)}>닫기</button>}</div>
+    {show && <div className="modal-backdrop"><section className="modal category-modal" role="dialog" aria-modal="true" aria-labelledby="category-title">
+      <div className="section-row"><h2 id="category-title">카테고리 관리</h2>{categories.length > 0 && <button className="btn-ghost" type="button" onClick={() => setOpen(false)}>닫기</button>}</div>
       {!categories.length && <p>첫 카테고리를 만들어 주세요.</p>}
-      {categories.map(c => <div className="category-row" key={c.id}><span>{c.name}</span><button onClick={() => { setEditing(c.id); setDraft(c.name); setError('') }}>수정</button><button className="btn-danger" onClick={() => void remove(c)}>삭제</button></div>)}
-      <form onSubmit={e => { e.preventDefault(); void save() }}><input className="field" aria-label="카테고리 이름" maxLength={40} placeholder="예: 일본여행, 가챠" value={draft} onChange={e => setDraft(e.target.value)} />{error && <p className="error">{error}</p>}<button className="btn" type="submit">{editing != null ? '이름 저장' : '카테고리 추가'}</button>{editing != null && <button type="button" onClick={() => { setEditing(undefined); setDraft(''); setError('') }}>취소</button>}</form>
+      {categories.map(c => <div className="category-row" key={c.id}><span>{c.name}</span><button className="btn-ghost" type="button" onClick={() => { setEditing(c.id); setDraft(c.name); setError('') }}>수정</button><button className="btn-danger" onClick={() => void remove(c)}>삭제</button></div>)}
+      <form onSubmit={e => { e.preventDefault(); void save() }}><input className="field" aria-label="카테고리 이름" maxLength={40} placeholder="예: 일본여행, 가챠" value={draft} onChange={e => setDraft(e.target.value)} />{error && <p className="error">{error}</p>}<button className="btn" type="submit">{editing != null ? '이름 저장' : '카테고리 추가'}</button>{editing != null && <button className="btn-secondary" type="button" onClick={() => { setEditing(undefined); setDraft(''); setError('') }}>취소</button>}</form>
     </section></div>}
   </Context.Provider>
 }

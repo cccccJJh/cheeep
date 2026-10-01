@@ -1123,3 +1123,19 @@ label {
 .capacity-field select { width:76px; flex-shrink:0; padding:12px 8px; }
 @media(max-width:359px) { .package-fields { grid-template-columns:1fr; } }
 
+
+.category-modal { background:var(--surface); color:var(--text); border:1px solid var(--line); box-shadow:var(--shadow); }
+.category-modal .section-row { margin:0 0 12px; }
+.category-modal .category-row { border-bottom:1px solid var(--line); gap:6px; }
+.category-modal .category-row span { min-width:0; font-size:15px; }
+.category-modal .category-row button { flex-shrink:0; padding:0 8px; min-height:44px; font-size:14px; font-weight:700; }
+.category-modal .field { background:var(--surface); color:var(--text); }
+.category-modal .field:focus { outline:2px solid var(--on-fg); outline-offset:2px; }
+
+.best-record-section { margin:0 0 20px; }
+.best-record-section .section-label { color:var(--muted); margin-bottom:8px; }
+.record-row.featured-record { grid-template-columns:76px minmax(0,1fr) 36px; padding:18px; gap:12px; }
+.featured-record .record-photo { width:76px; height:88px; }
+.featured-record > .more-wrap { grid-column:3; }
+.featured-price { margin:6px 0; color:var(--text); font-size:26px; font-weight:800; letter-spacing:-.04em; overflow-wrap:anywhere; }
+@media(max-width:359px) { .record-row.featured-record { grid-template-columns:60px minmax(0,1fr) 32px; padding:12px; gap:8px; } .featured-record .record-photo { width:60px; height:72px; } .featured-price { font-size:22px; } }

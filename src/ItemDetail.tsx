@@ -187,6 +187,66 @@ export function ItemDetail() {
     await reload()
   }
 
+  const bestRecords = sightings.filter(s => s.id != null && bestIds.has(s.id))
+  const otherRecords = sightings.filter(s => s.id == null || !bestIds.has(s.id))
+  function renderRecord(s: Sighting, i: number, featured = false) {
+            const unitWon = stingy && unit ? unitPriceOf(s, unit) : undefined
+            const isBest = s.id != null && bestIds.has(s.id)
+            return (
+              <li className={featured ? 'record-row best-row featured-record' : 'record-row'} key={s.id}>
+                {!featured && <span className="num">{i + 1}</span>}
+                <Photo blob={s.photoBlob} alt={s.store} />
+                <div className="record-body">
+                  <p className="record-store">
+                    {s.store}
+                    {isBest ? <span className="best">BEST</span> : null}
+                  </p>
+                  {stingy && unit && unitWon != null ? (
+                    <p className="record-unit">
+                      {unitHeadline(unit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
+                    </p>
+                  ) : stingy && anyUnitPrice ? (
+                    <p className="record-unit">용량 없음 · 판매가로 비교</p>
+                  ) : null}
+                  <p className={featured ? 'featured-price' : 'record-line'}>{formatWon(s.price)}</p>
+                  <p className="record-line">
+                    {s.quantity != null ? ` · ${s.quantity}개` : ''}
+                    {s.capacity != null ? ` · 개당 ${s.capacity}${s.capacityUnit ?? ''}` : ''}
+                    {s.packageSize != null && unit
+                      ? ` · ${formatPackageSize(s.packageSize, unit)}`
+                      : s.packageSize != null
+                        ? ` · ${s.packageSize.toLocaleString('ko-KR')}`
+                        : ''}
+                  </p>
+                </div>
+                <div className="more-wrap">
+                  <button
+                    className="more-btn"
+                    type="button"
+                    aria-label="기록 메뉴"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setOpenMenu(openMenu === s.id ? undefined : s.id)
+                    }}
+                  >
+                    ⋯
+                  </button>
+                  {openMenu === s.id ? (
+                    <div className="more-menu">
+                      <Link to={`/items/${itemId}/record/${s.id}`}>수정</Link>
+                      <button
+                        type="button"
+                        onClick={() => void onDeleteSighting(s)}
+                      >
+                        삭제
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              </li>
+            )
+  }
+
   return (
     <>
     <div className="page detail-page has-nav">
@@ -204,6 +264,10 @@ export function ItemDetail() {
         <h1>{item.name}</h1>
       </div>
 
+      {bestRecords.length > 0 && <section className="best-record-section" aria-label="최저가">
+        <h2 className="section-label">최저가</h2>
+        <ol className="record-list">{bestRecords.map((s, i) => renderRecord(s, i, true))}</ol>
+      </section>}
       {sightings.length === 0 && <Photo blob={item.photoBlob} large alt={item.name} />}
       {sightings.length === 0 && !mainPhoto && <label className="btn-secondary photo-btn detail-photo-change">
         {photoBusy ? '사진 처리 중…' : '사진 변경'}
@@ -356,70 +420,16 @@ export function ItemDetail() {
       </div>
 
       <div className="section-row">
-        <h2>가격 기록{sightings.length ? ` ${sightings.length}` : ''}</h2>
+        <h2>{sightings.length ? `다른 가격 기록 ${otherRecords.length}` : '가격 기록'}</h2>
       </div>
 
       {sightings.length === 0 ? (
         <p className="meta pad">아직 가격이 없습니다. 매장에서 찍으면 여기에 쌓입니다.</p>
+      ) : otherRecords.length === 0 ? (
+        <p className="meta">다른 가격 기록이 없습니다.</p>
       ) : (
         <ol className="record-list">
-          {sightings.map((s, i) => {
-            const unitWon = stingy && unit ? unitPriceOf(s, unit) : undefined
-            const isBest = s.id != null && bestIds.has(s.id)
-            return (
-              <li className={isBest ? 'record-row best-row' : 'record-row'} key={s.id}>
-                <span className="num">{i + 1}</span>
-                <Photo blob={s.photoBlob} alt={s.store} />
-                <div className="record-body">
-                  <p className="record-store">
-                    {s.store}
-                    {isBest ? <span className="best">BEST</span> : null}
-                  </p>
-                  {stingy && unit && unitWon != null ? (
-                    <p className="record-unit">
-                      {unitHeadline(unit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
-                    </p>
-                  ) : stingy && anyUnitPrice ? (
-                    <p className="record-unit">용량 없음 · 판매가로 비교</p>
-                  ) : null}
-                  <p className="record-line">
-                    {formatWon(s.price)}
-                    {s.quantity != null ? ` · ${s.quantity}개` : ''}
-                    {s.capacity != null ? ` · 개당 ${s.capacity}${s.capacityUnit ?? ''}` : ''}
-                    {s.packageSize != null && unit
-                      ? ` · ${formatPackageSize(s.packageSize, unit)}`
-                      : s.packageSize != null
-                        ? ` · ${s.packageSize.toLocaleString('ko-KR')}`
-                        : ''}
-                  </p>
-                </div>
-                <div className="more-wrap">
-                  <button
-                    className="more-btn"
-                    type="button"
-                    aria-label="기록 메뉴"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setOpenMenu(openMenu === s.id ? undefined : s.id)
-                    }}
-                  >
-                    ⋯
-                  </button>
-                  {openMenu === s.id ? (
-                    <div className="more-menu">
-                      <Link to={`/items/${itemId}/record/${s.id}`}>수정</Link>
-                      <button
-                        type="button"
-                        onClick={() => void onDeleteSighting(s)}
-                      >
-                        삭제
-                      </button>
-                    </div>
-                  ) : null}
-                </div>
-              </li>
-            )
-          })}
+          {otherRecords.map((s, i) => renderRecord(s, i))}
         </ol>
       )}
     </div>
