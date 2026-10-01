@@ -121,7 +121,7 @@ export function unitPriceOf(
 }
 
 export function sortSightingsForItem(list: Sighting[], item: Item): Sighting[] {
-  if (!isStingy(item) || !item.comparisonUnit) return sortSightings(list)
+  if (!isStingy(item) || !item.comparisonUnit || list.some(s => unitPriceOf(s, item.comparisonUnit!) == null)) return sortSightings(list)
   const unit = item.comparisonUnit
   return [...list].sort((a, b) => {
     const ua = unitPriceOf(a, unit)
@@ -145,7 +145,7 @@ export function bestSightingsForItem(list: Sighting[], item: Item): Sighting[] {
   const unit = item.comparisonUnit
   if (isStingy(item) && unit) {
     const withUnit = list.filter((s) => unitPriceOf(s, unit) != null)
-    if (withUnit.length > 0) {
+    if (withUnit.length === list.length) {
       let min = Infinity
       for (const s of withUnit) {
         const won = unitPriceOf(s, unit)

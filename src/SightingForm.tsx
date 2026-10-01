@@ -80,9 +80,10 @@ export function SightingForm() {
       }
     const lines: string[] = []
     if (packageInfo.quantity != null) lines.push(`개당 ${Math.round(record.price / packageInfo.quantity).toLocaleString('ko-KR')}원`)
-    if (stingy && unit && (unit !== 'each' || !lines.length)) {
-      const won = unitPriceOf(record, unit)
-      if (won != null) lines.push(`${unitHeadline(unit)} ${Math.round(won).toLocaleString('ko-KR')}원`)
+    const displayUnit = packageInfo.capacity != null ? (capacityUnit === 'g' || capacityUnit === 'kg' ? '100g' : '100ml') : packageInfo.quantity != null ? undefined : unit
+    if (stingy && displayUnit) {
+      const won = unitPriceOf(record, displayUnit)
+      if (won != null) lines.push(`${unitHeadline(displayUnit)} ${Math.round(won).toLocaleString('ko-KR')}원`)
     }
     return lines.length ? lines.join(' · ') : null
   }, [itemId, packageSize, price, stingy, unit, quantity, capacity, capacityUnit])

@@ -138,10 +138,6 @@ export function ItemDetail() {
       .map((s) => s.id)
       .filter((id): id is number => id != null),
   )
-  const anyUnitPrice =
-    stingy && unit
-      ? sightings.some((s) => unitPriceOf(s, unit) != null)
-      : false
   const bought = isPurchased(item)
   const boughtLines = bought ? purchaseLines(item) : []
 
@@ -190,7 +186,8 @@ export function ItemDetail() {
   const bestRecords = sightings.filter(s => s.id != null && bestIds.has(s.id))
   const otherRecords = sightings.filter(s => s.id == null || !bestIds.has(s.id))
   function renderRecord(s: Sighting, i: number, featured = false) {
-            const unitWon = stingy && unit ? unitPriceOf(s, unit) : undefined
+            const displayUnit = s.capacity != null && s.capacityUnit ? (s.capacityUnit === 'g' || s.capacityUnit === 'kg' ? '100g' : '100ml') : s.quantity != null ? undefined : unit
+            const unitWon = stingy && displayUnit ? unitPriceOf(s, displayUnit) : undefined
             const isBest = s.id != null && bestIds.has(s.id)
             return (
               <li className={featured ? 'record-row best-row featured-record' : 'record-row'} key={s.id}>
@@ -201,13 +198,11 @@ export function ItemDetail() {
                     {s.store}
                     {isBest ? <span className="best">BEST</span> : null}
                   </p>
-                  {s.quantity != null && !(stingy && unit === 'each') && <p className="record-unit">개당 {Math.round(s.price / s.quantity).toLocaleString('ko-KR')}원</p>}
-                  {stingy && unit && unitWon != null ? (
+                  {s.quantity != null && <p className="record-unit">개당 {Math.round(s.price / s.quantity).toLocaleString('ko-KR')}원</p>}
+                  {stingy && displayUnit && unitWon != null ? (
                     <p className="record-unit">
-                      {unitHeadline(unit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
+                      {unitHeadline(displayUnit)} {Math.round(unitWon).toLocaleString('ko-KR')}원
                     </p>
-                  ) : stingy && anyUnitPrice ? (
-                    <p className="record-unit">용량 없음 · 판매가로 비교</p>
                   ) : null}
                   <p className={featured ? 'featured-price' : 'record-line'}>{formatWon(s.price)}</p>
                   <p className="record-line">
